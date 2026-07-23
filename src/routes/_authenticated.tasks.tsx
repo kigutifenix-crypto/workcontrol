@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { STATUS, TASK_TYPES, PRIORITIES, typeIcon, priorityTone, type Status } from "@/lib/task-utils";
 import { TaskDetailModal, type TaskDetail } from "@/components/task-detail-modal";
-import { MachineSelector } from "@/components/machine-selector";
+import { MachineFormFields, resolveOrCreateMachine } from "@/components/machine-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,22 +58,26 @@ function TasksKanban() {
   const [selectedTask, setSelectedTask] = useState<TaskDetail | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [createMachineId, setCreateMachineId] = useState<string | null>(null);
+  const [createMachineName, setCreateMachineName] = useState("");
+  const [createMachineCode, setCreateMachineCode] = useState("");
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["tasks", "all"],
     queryFn: async () => {
       const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Task[];
+      return (data ?? []) as TaskDetail[];
     },
   });
+
   const { data: profiles = [] } = useQuery({
     queryKey: ["profiles"],
-    queryFn: async () => (await supabase.from("profiles").select("id,name")).data ?? [],
+    queryFn: async () => (await supabase.from("profiles").select("id,name").order("name")).data ?? [],
   });
+
   const { data: machines = [] } = useQuery({
     queryKey: ["machines"],
-    queryFn: async () => (await supabase.from("machines").select("id,code,name")).data ?? [],
+    queryFn: async () => (await supabase.from("machines").select("id,code,name").order("code")).data ?? [],
   });
 
   const move = useMutation({
@@ -84,7 +88,6 @@ function TasksKanban() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
-    onError: (e: Error) => toast.error("Erro ao mover tarefa", { description: e.message }),
   });
 
   const del = useMutation({
@@ -92,35 +95,45 @@ function TasksKanban() {
       const { error } = await supabase.from("tasks").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["tasks"] });
-      toast.success("Tarefa removida");
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
   });
 
   const create = useMutation({
     mutationFn: async (payload: Record<string, unknown>) => {
-      const { error } = await supabase.from("tasks").insert({ ...payload, created_by: user?.id } as never);
+      const { error } = await supabase.from("tasks").insert({
+        ...payload,
+        created_by: user?.id,
+      } as never);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["machines"] });
       setOpen(false);
-      toast.success("Tarefa criada");
+      setCreateMachineId(null);
+      setCreateMachineName("");
+      setCreateMachineCode("");
     },
-    onError: (e: Error) => toast.error("Erro ao criar", { description: e.message }),
   });
 
-  const onCreate = (e: React.FormEvent<HTMLFormElement>) => {
+  const onCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
+
+    // Resolve or automatically create machine
+    const resolvedMachineId = await resolveOrCreateMachine(
+      createMachineId,
+      createMachineCode,
+      createMachineName
+    );
+
     create.mutate({
       title: f.get("title"),
       type: f.get("type"),
       priority: f.get("priority"),
       description: f.get("description") || null,
       assignee_id: f.get("assignee_id") || null,
-      machine_id: f.get("machine_id") || null,
+      machine_id: resolvedMachineId,
       status: "pending",
     });
   };
@@ -167,24 +180,30 @@ function TasksKanban() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label>Responsável</Label>
-                    <Select name="assignee_id">
-                      <SelectTrigger><SelectValue placeholder="Ninguém" /></SelectTrigger>
-                      <SelectContent>
-                        {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Máquina / Equipamento</Label>
-                    <MachineSelector
-                      machines={machines}
-                      value={createMachineId}
-                      onChange={setCreateMachineId}
-                      placeholder="Busque por código ou nome..."
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label>Responsável</Label>
+                  <Select name="assignee_id">
+                    <SelectTrigger><SelectValue placeholder="Ninguém" /></SelectTrigger>
+                    <SelectContent>
+                      {profiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Campos de Nome e Código da Máquina (Selecionar ou Digitar) */}
+                <div className="rounded-xl border border-border/60 p-3 bg-surface-elevated">
+                  <MachineFormFields
+                    machines={machines}
+                    machineId={createMachineId}
+                    machineName={createMachineName}
+                    machineCode={createMachineCode}
+                    onChange={(val) => {
+                      setCreateMachineId(val.machineId);
+                      setCreateMachineName(val.machineName);
+                      setCreateMachineCode(val.machineCode);
+                    }}
+                  />
+                </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Descrição</Label>

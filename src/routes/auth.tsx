@@ -27,10 +27,8 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && session) {
-      navigate({ to: "/dashboard", replace: true });
-    }
-  }, [session, loading]);
+    if (!loading && session) navigate({ to: "/dashboard" });
+  }, [session, loading, navigate]);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

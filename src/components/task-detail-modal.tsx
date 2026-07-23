@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { MachineSelector } from "@/components/machine-selector";
+import { MachineFormFields, resolveOrCreateMachine } from "@/components/machine-selector";
 import {
   STATUS,
   TASK_TYPES,
@@ -101,21 +101,9 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
   const [editPriority, setEditPriority] = useState("Normal");
   const [editAssignee, setEditAssignee] = useState<string | null>(null);
   const [editMachine, setEditMachine] = useState<string | null>(null);
+  const [editMachineName, setEditMachineName] = useState("");
+  const [editMachineCode, setEditMachineCode] = useState("");
   const [editDescription, setEditDescription] = useState("");
-
-  useEffect(() => {
-    if (task) {
-      setEditTitle(task.title);
-      setEditType(task.type);
-      setEditPriority(task.priority);
-      setEditAssignee(task.assignee_id);
-      setEditMachine(task.machine_id);
-      setEditDescription(task.description || "");
-      setNewNotes(task.notes || "");
-      setIsEditing(false);
-      setEditingNotes(false);
-    }
-  }, [task]);
 
   const { data: profiles = [] } = useQuery({
     queryKey: ["profiles"],
@@ -126,6 +114,23 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
     queryKey: ["machines"],
     queryFn: async () => (await supabase.from("machines").select("id,code,name,status")).data ?? [],
   });
+
+  useEffect(() => {
+    if (task) {
+      setEditTitle(task.title);
+      setEditType(task.type);
+      setEditPriority(task.priority);
+      setEditAssignee(task.assignee_id);
+      setEditMachine(task.machine_id);
+      const m = machines.find((x) => x.id === task.machine_id);
+      setEditMachineName(m?.name || "");
+      setEditMachineCode(m?.code || "");
+      setEditDescription(task.description || "");
+      setNewNotes(task.notes || "");
+      setIsEditing(false);
+      setEditingNotes(false);
+    }
+  }, [task, machines]);
 
   const assigneeProfile = profiles.find((p) => p.id === task?.assignee_id);
   const machineObj = machines.find((m) => m.id === task?.machine_id);
@@ -161,6 +166,12 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
   const updateTask = useMutation({
     mutationFn: async () => {
       if (!task) return;
+      const resolvedMachineId = await resolveOrCreateMachine(
+        editMachine,
+        editMachineCode,
+        editMachineName
+      );
+
       const { error } = await supabase
         .from("tasks")
         .update({
@@ -168,7 +179,7 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
           type: editType,
           priority: editPriority,
           assignee_id: editAssignee === "none" ? null : editAssignee,
-          machine_id: editMachine === "none" ? null : editMachine,
+          machine_id: resolvedMachineId,
           description: editDescription || null,
         } as never)
         .eq("id", task.id);
@@ -178,6 +189,7 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["my-tasks"] });
+      qc.invalidateQueries({ queryKey: ["machines"] });
       setIsEditing(false);
       if (onTaskUpdated) onTaskUpdated();
       toast.success("Tarefa atualizada com sucesso");
@@ -480,13 +492,18 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="font-semibold">Máquina / Equipamento</Label>
-                  <MachineSelector
+                {/* Campos de Nome e Código da Máquina (Selecionar ou Digitar) */}
+                <div className="rounded-xl border border-border/60 p-3 bg-surface-elevated col-span-2">
+                  <MachineFormFields
                     machines={machines}
-                    value={editMachine}
-                    onChange={setEditMachine}
-                    placeholder="Busque por código ou nome..."
+                    machineId={editMachine}
+                    machineName={editMachineName}
+                    machineCode={editMachineCode}
+                    onChange={(val) => {
+                      setEditMachine(val.machineId);
+                      setEditMachineName(val.machineName);
+                      setEditMachineCode(val.machineCode);
+                    }}
                   />
                 </div>
               </div>

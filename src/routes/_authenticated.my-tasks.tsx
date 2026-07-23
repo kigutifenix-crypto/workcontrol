@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { STATUS, TASK_TYPES, PRIORITIES, typeIcon, priorityTone, parsePhotoUrls, formatPhotoUrls } from "@/lib/task-utils";
 import { TaskDetailModal, type TaskDetail } from "@/components/task-detail-modal";
-import { MachineSelector } from "@/components/machine-selector";
+import { MachineFormFields, resolveOrCreateMachine } from "@/components/machine-selector";
 import { Camera, CheckCircle2, Loader2, Play, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +37,8 @@ function MyTasks() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [createMachineId, setCreateMachineId] = useState<string | null>(null);
+  const [createMachineName, setCreateMachineName] = useState("");
+  const [createMachineCode, setCreateMachineCode] = useState("");
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const { data: machines = [] } = useQuery({
@@ -56,23 +58,33 @@ function MyTasks() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["my-tasks"] });
       qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["machines"] });
       setCreateOpen(false);
       setCreateMachineId(null);
+      setCreateMachineName("");
+      setCreateMachineCode("");
       toast.success("Nova tarefa criada!");
     },
     onError: (e: Error) => toast.error("Erro ao criar tarefa", { description: e.message }),
   });
 
-  const onCreate = (e: React.FormEvent<HTMLFormElement>) => {
+  const onCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
+
+    const resolvedMachineId = await resolveOrCreateMachine(
+      createMachineId,
+      createMachineCode,
+      createMachineName
+    );
+
     create.mutate({
       title: f.get("title"),
       type: f.get("type"),
       priority: f.get("priority"),
       description: f.get("description") || null,
       assignee_id: user?.id,
-      machine_id: createMachineId,
+      machine_id: resolvedMachineId,
       status: "pending",
     });
   };
@@ -200,13 +212,18 @@ function MyTasks() {
                   </Select>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label>Máquina / Equipamento</Label>
-                <MachineSelector
+              {/* Campos de Nome e Código da Máquina (Selecionar ou Digitar) */}
+              <div className="rounded-xl border border-border/60 p-3 bg-surface-elevated">
+                <MachineFormFields
                   machines={machines}
-                  value={createMachineId}
-                  onChange={setCreateMachineId}
-                  placeholder="Busque por código ou nome..."
+                  machineId={createMachineId}
+                  machineName={createMachineName}
+                  machineCode={createMachineCode}
+                  onChange={(val) => {
+                    setCreateMachineId(val.machineId);
+                    setCreateMachineName(val.machineName);
+                    setCreateMachineCode(val.machineCode);
+                  }}
                 />
               </div>
               <div className="space-y-2">

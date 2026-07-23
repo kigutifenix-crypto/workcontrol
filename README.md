@@ -1,46 +1,29 @@
-# FitControl — WorkControl
+# Welcome to your Lovable project
 
-Sistema completo de controle de ordens de serviço, produção de máquinas, acompanhamento de tarefas e evidências fotográficas em tempo real.
+This project was built with [Lovable](https://lovable.dev).
 
-## 🛠️ Tecnologias Utilizadas
+## Build with Lovable
 
-- **Frontend**: React 19, TypeScript, TanStack Router, TanStack Query, Tailwind CSS v4, Lucide Icons, Shadcn UI
-- **Backend / Banco de Dados**: Supabase (PostgreSQL, Auth, RLS, Storage Buckets)
-- **Servidor Local**: Vite
+Open your project in the [Lovable editor](https://lovable.dev) and keep building.
 
-## 🚀 Como Rodar o Projeto Localmente
+- **Ship faster**: describe what you want to build and Lovable handles the code.
+- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
+- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
 
-1. Clone o repositório:
-```bash
-git clone https://github.com/kigutifenix-crypto/workcontrol.git
-cd workcontrol
-```
+## Development
 
-2. Instale as dependências:
-```bash
-npm install
-```
+Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
-3. Configure o arquivo `.env`:
-Crie um arquivo `.env` na raiz do projeto baseado no `.env.example`:
-```env
-VITE_SUPABASE_URL="https://qaigkeawaqcoafaquyni.supabase.co"
-VITE_SUPABASE_PUBLISHABLE_KEY="sua_publishable_key"
-VITE_SUPABASE_SERVICE_ROLE_KEY="sua_service_role_key"
-```
-
-4. Execute o servidor de desenvolvimento:
-```bash
+```sh
+git clone <this-repository-url>
+cd <repository-name>
+npm i
 npm run dev
 ```
 
-Acesse o sistema em **http://localhost:8080** no seu navegador ou dispositivo móvel na mesma rede.
+## Built with
 
-## 📋 Funcionalidades
-
-- **Dashboard Executivo**: Visão geral de produtividade, status de ordens de serviço e gráficos.
-- **Minhas Tarefas**: Foco no trabalho do colaborador com envio de múltiplas fotos de evidência e botão flutuante para celular.
-- **Quadro Kanban**: Gestão visual de tarefas por colunas de status, menu de ações rápidas e indicação clara do responsável.
-- **Todas as Tarefas**: Tabela e grade interativa com busca em tempo real por título, máquina ou responsável.
-- **Gestão de Usuários (Admin)**: Painel exclusivo para administradores criarem e editarem permissões de usuários.
-- **Gestão de Máquinas**: Cadastro de equipamentos e busca automatizada por código e nome.
+- TanStack Start
+- TypeScript
+- React
+- Tailwind CSS

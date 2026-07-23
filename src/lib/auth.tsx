@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useMemo, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -25,81 +25,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadProfile = useCallback(async (uid: string) => {
-    try {
-      const [{ data: p }, { data: r }] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
-        supabase.from("user_roles").select("role").eq("user_id", uid),
-      ]);
-      setProfile(p as Profile | null);
-      setRoles(((r ?? []) as { role: Role }[]).map((x) => x.role));
-    } catch (err) {
-      console.error("[Auth] Error loading profile:", err);
-    }
-  }, []);
+  const loadProfile = async (uid: string) => {
+    const [{ data: p }, { data: r }] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
+      supabase.from("user_roles").select("role").eq("user_id", uid),
+    ]);
+    setProfile(p as Profile | null);
+    setRoles(((r ?? []) as { role: Role }[]).map((x) => x.role));
+  };
 
   useEffect(() => {
-    let mounted = true;
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      setSession(data.session);
-      if (data.session?.user) {
-        loadProfile(data.session.user.id).finally(() => {
-          if (mounted) setLoading(false);
-        });
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_evt, s) => {
-      if (!mounted) return;
+    supabase.auth.onAuthStateChange((_evt, s) => {
       setSession(s);
-      if (s?.user) {
-        await loadProfile(s.user.id);
-      } else {
+      if (s?.user) setTimeout(() => loadProfile(s.user.id), 0);
+      else {
         setProfile(null);
         setRoles([]);
       }
-      setLoading(false);
     });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [loadProfile]);
-
-  const signOut = useCallback(async () => {
-    setLoading(true);
-    await supabase.auth.signOut();
-    setSession(null);
-    setProfile(null);
-    setRoles([]);
-    setLoading(false);
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      if (data.session?.user) loadProfile(data.session.user.id).finally(() => setLoading(false));
+      else setLoading(false);
+    });
   }, []);
 
-  const refreshProfile = useCallback(async () => {
-    if (session?.user) await loadProfile(session.user.id);
-  }, [session?.user, loadProfile]);
-
-  const value: AuthCtx = useMemo(
-    () => ({
-      session,
-      user: session?.user ?? null,
-      profile,
-      roles,
-      isSupervisor: roles.includes("admin") || roles.includes("supervisor"),
-      isAdmin: roles.includes("admin"),
-      loading,
-      signOut,
-      refreshProfile,
-    }),
-    [session, profile, roles, loading, signOut, refreshProfile]
-  );
+  const value: AuthCtx = {
+    session,
+    user: session?.user ?? null,
+    profile,
+    roles,
+    isSupervisor: roles.includes("admin") || roles.includes("supervisor"),
+    isAdmin: roles.includes("admin"),
+    loading,
+    signOut: async () => {
+      await supabase.auth.signOut();
+    },
+    refreshProfile: async () => {
+      if (session?.user) await loadProfile(session.user.id);
+    },
+  };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
