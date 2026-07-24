@@ -7,13 +7,20 @@ import { useAuth } from "@/lib/auth";
 import { STATUS, TASK_TYPES, PRIORITIES, typeIcon, priorityTone, parsePhotoUrls, formatPhotoUrls } from "@/lib/task-utils";
 import { TaskDetailModal, type TaskDetail } from "@/components/task-detail-modal";
 import { MachineFormFields, resolveOrCreateMachine } from "@/components/machine-selector";
-import { Camera, CheckCircle2, Loader2, Play, Plus } from "lucide-react";
+import { Camera, CheckCircle2, Loader2, Play, Plus, MoreVertical, Eye, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -30,7 +37,7 @@ export const Route = createFileRoute("/_authenticated/my-tasks")({
 });
 
 function MyTasks() {
-  const { user } = useAuth();
+  const { user, isSupervisor } = useAuth();
   const qc = useQueryClient();
   const [uploading, setUploading] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<TaskDetail | null>(null);
@@ -44,6 +51,19 @@ function MyTasks() {
   const { data: machines = [] } = useQuery({
     queryKey: ["machines"],
     queryFn: async () => (await supabase.from("machines").select("id,code,name")).data ?? [],
+  });
+
+  const deleteTask = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("tasks").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-tasks"] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      toast.success("Tarefa removida");
+    },
+    onError: (e: Error) => toast.error("Erro ao excluir", { description: e.message }),
   });
 
   const create = useMutation({
@@ -288,6 +308,73 @@ function MyTasks() {
                           <p className="text-xs text-muted-foreground mt-0.5">{t.type} · {new Date(t.created_at).toLocaleDateString("pt-BR")}</p>
                         </div>
                       </div>
+
+                      {/* Menu de Ações */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-accent transition"
+                            aria-label="Menu de ações"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTask(t as TaskDetail);
+                              setDetailOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2 text-primary" /> Ver Detalhes
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              fileRefs.current[t.id]?.click();
+                            }}
+                          >
+                            <Camera className="h-4 w-4 mr-2 text-info" /> Anexar Fotos
+                          </DropdownMenuItem>
+
+                          <DropdownMenuSeparator />
+
+                          {STATUS.map((s) => (
+                            <DropdownMenuItem
+                              key={s.id}
+                              disabled={t.status === s.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setStatus.mutate({ id: t.id, status: s.id });
+                              }}
+                              className="text-xs"
+                            >
+                              <span className={cn("h-2 w-2 rounded-full mr-2", s.tone.split(" ")[0])} />
+                              Mover para {s.label}
+                            </DropdownMenuItem>
+                          ))}
+
+                          {(isSupervisor || t.created_by === user?.id) && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (confirm("Tem certeza que deseja excluir esta tarefa?")) {
+                                    deleteTask.mutate(t.id);
+                                  }
+                                }}
+                                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" /> Excluir Tarefa
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                     {t.description && <p className="text-sm text-muted-foreground mt-3">{t.description}</p>}
 
