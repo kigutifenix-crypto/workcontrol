@@ -22,13 +22,18 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function Dashboard() {
-  const { profile } = useAuth();
+  const { user, profile, isSupervisor } = useAuth();
   const [selectedTask, setSelectedTask] = useState<TaskDetail | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const { data: tasks = [] } = useQuery({
-    queryKey: ["tasks", "all"],
+    queryKey: ["tasks", "all", user?.id],
+    enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase.from("tasks").select("*").order("created_at", { ascending: false });
+      let query = supabase.from("tasks").select("*");
+      if (!isSupervisor && user) {
+        query = query.or(`assignee_id.eq.${user.id},created_by.eq.${user.id}`);
+      }
+      const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },

@@ -203,9 +203,16 @@ CREATE POLICY "Authenticated insert machines" ON public.machines FOR INSERT TO a
 DROP POLICY IF EXISTS "Authenticated update machines" ON public.machines;
 CREATE POLICY "Authenticated update machines" ON public.machines FOR UPDATE TO authenticated USING (true);
 
--- Políticas para Tasks
+-- Políticas para Tasks: Funcionários veem apenas as próprias tarefas; Supervisores/Admins veem todas.
 DROP POLICY IF EXISTS "Tasks viewable by authenticated" ON public.tasks;
-CREATE POLICY "Tasks viewable by authenticated" ON public.tasks FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Tasks viewable policy" ON public.tasks;
+
+CREATE POLICY "Tasks viewable policy" ON public.tasks FOR SELECT TO authenticated
+  USING (
+    public.is_supervisor(auth.uid()) OR
+    assignee_id = auth.uid() OR
+    created_by = auth.uid()
+  );
 
 DROP POLICY IF EXISTS "Supervisors manage tasks" ON public.tasks;
 CREATE POLICY "Supervisors manage tasks" ON public.tasks FOR ALL TO authenticated

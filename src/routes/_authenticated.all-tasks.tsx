@@ -92,12 +92,14 @@ function AllTasksPage() {
 
   // Fetch Tasks
   const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ["tasks", "all"],
+    queryKey: ["tasks", "all", user?.id],
+    enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tasks")
-        .select("*")
-        .order("created_at", { ascending: false });
+      let query = supabase.from("tasks").select("*");
+      if (!isSupervisor && user) {
+        query = query.or(`assignee_id.eq.${user.id},created_by.eq.${user.id}`);
+      }
+      const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as TaskDetail[];
     },
