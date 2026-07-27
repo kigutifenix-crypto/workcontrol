@@ -3,9 +3,11 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.workcontrol.app',
   appName: 'WorkControl',
-  webDir: '.output/public',
+  webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    url: 'http://10.100.2.23:8080',
+    cleartext: true
   }
 };
 

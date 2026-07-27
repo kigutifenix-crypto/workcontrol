@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Users,
   ClipboardList,
+  Briefcase,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -126,6 +127,29 @@ export function AppShell({ children, title, subtitle, actions }: {
               </Link>
             );
           })}
+          {isSupervisor && (
+            <Link
+              to="/employees"
+              onClick={() => setOpen(false)}
+              className={cn(
+                "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
+                pathname === "/employees" || pathname.startsWith("/employees/")
+                  ? "bg-primary/10 text-foreground shadow-[inset_2px_0_0_var(--color-primary)]"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+            >
+              <span className={cn(
+                "grid h-9 w-9 place-items-center rounded-lg transition-colors",
+                pathname === "/employees" ? "bg-gradient-ember text-primary-foreground shadow-ember" : "bg-accent/60 group-hover:bg-accent"
+              )}>
+                <Briefcase className="h-4 w-4" />
+              </span>
+              <span className="flex-1">
+                <span className="block font-semibold">Funcionários</span>
+                <span className="block text-[11px] text-muted-foreground">Desempenho e atividades</span>
+              </span>
+            </Link>
+          )}
           {isAdmin && (
             <Link
               to="/users"

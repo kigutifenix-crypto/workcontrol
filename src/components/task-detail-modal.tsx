@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { Capacitor } from "@capacitor/core";
+import { Camera as CapCamera, CameraResultType } from "@capacitor/camera";
 import { MachineFormFields, resolveOrCreateMachine } from "@/components/machine-selector";
 import {
   STATUS,
@@ -88,6 +90,71 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
   const { user, isSupervisor, isAdmin } = useAuth();
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const takePhoto = async (): Promise<File | null> => {
+    try {
+      const photo = await CapCamera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+      });
+      if (!photo.webPath) return null;
+      const response = await fetch(photo.webPath);
+      const blob = await response.blob();
+      return new File([blob], `photo-${Date.now()}.jpg`, { type: "image/jpeg" });
+    } catch (err) {
+      console.error("Erro ao tirar foto:", err);
+      return null;
+    }
+  };
+
+  const pickPhotos = async (): Promise<File[]> => {
+    try {
+      const { photos } = await CapCamera.pickImages({
+        quality: 90,
+      });
+      const files: File[] = [];
+      for (const photo of photos) {
+        if (photo.webPath) {
+          const response = await fetch(photo.webPath);
+          const blob = await response.blob();
+          files.push(new File([blob], `gallery-${Date.now()}-${files.length}.jpg`, { type: "image/jpeg" }));
+        }
+      }
+      return files;
+    } catch (err) {
+      console.error("Erro ao escolher fotos da galeria:", err);
+      return [];
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    if (Capacitor.isNativePlatform()) {
+      const file = await takePhoto();
+      if (file) {
+        handleUploadPhotos([file]);
+      }
+    } else {
+      if (fileInputRef.current) {
+        fileInputRef.current.setAttribute("capture", "environment");
+        fileInputRef.current.click();
+      }
+    }
+  };
+
+  const handlePickPhotos = async () => {
+    if (Capacitor.isNativePlatform()) {
+      const files = await pickPhotos();
+      if (files.length > 0) {
+        handleUploadPhotos(files);
+      }
+    } else {
+      if (fileInputRef.current) {
+        fileInputRef.current.removeAttribute("capture");
+        fileInputRef.current.click();
+      }
+    }
+  };
 
   const [isEditing, setIsEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -381,9 +448,14 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
                         {isEditing ? "Cancelar Edição" : "Editar Tarefa"}
                       </DropdownMenuItem>
 
-                      <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                      <DropdownMenuItem onClick={handleTakePhoto}>
                         <Camera className="h-4 w-4 mr-2 text-info" />
-                        Anexar Fotos (Múltiplas)
+                        Tirar Foto
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem onClick={handlePickPhotos}>
+                        <ImageIcon className="h-4 w-4 mr-2 text-info" />
+                        Escolher da Galeria
                       </DropdownMenuItem>
 
                       <DropdownMenuSeparator />
@@ -650,20 +722,31 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
                   <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                     <Camera className="h-3.5 w-3.5 text-warning" /> Evidências Fotográficas ({existingPhotos.length})
                   </h4>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="h-7 text-xs gap-1.5"
-                  >
-                    {uploading ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Plus className="h-3.5 w-3.5" />
-                    )}
-                    {existingPhotos.length > 0 ? "Adicionar mais fotos" : "Enviar fotos"}
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={uploading}
+                        className="h-7 text-xs gap-1.5"
+                      >
+                        {uploading ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Plus className="h-3.5 w-3.5" />
+                        )}
+                        {existingPhotos.length > 0 ? "Adicionar mais fotos" : "Enviar fotos"}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleTakePhoto}>
+                        <Camera className="h-4 w-4 mr-2" /> Tirar Foto
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handlePickPhotos}>
+                        <ImageIcon className="h-4 w-4 mr-2" /> Escolher da Galeria
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {existingPhotos.length > 0 ? (

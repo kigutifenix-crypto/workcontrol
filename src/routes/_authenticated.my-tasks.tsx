@@ -7,7 +7,9 @@ import { useAuth } from "@/lib/auth";
 import { STATUS, TASK_TYPES, PRIORITIES, typeIcon, priorityTone, parsePhotoUrls, formatPhotoUrls } from "@/lib/task-utils";
 import { TaskDetailModal, type TaskDetail } from "@/components/task-detail-modal";
 import { MachineFormFields, resolveOrCreateMachine } from "@/components/machine-selector";
-import { Camera, CheckCircle2, Loader2, Play, Plus, MoreVertical, Eye, Pencil, Trash2 } from "lucide-react";
+import { Camera, CheckCircle2, Loader2, Play, Plus, MoreVertical, Eye, Pencil, Trash2, ImageIcon } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
+import { Camera as CapCamera, CameraResultType } from "@capacitor/camera";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,6 +49,73 @@ function MyTasks() {
   const [createMachineName, setCreateMachineName] = useState("");
   const [createMachineCode, setCreateMachineCode] = useState("");
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const takePhoto = async (): Promise<File | null> => {
+    try {
+      const photo = await CapCamera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+      });
+      if (!photo.webPath) return null;
+      const response = await fetch(photo.webPath);
+      const blob = await response.blob();
+      return new File([blob], `photo-${Date.now()}.jpg`, { type: "image/jpeg" });
+    } catch (err) {
+      console.error("Erro ao tirar foto:", err);
+      return null;
+    }
+  };
+
+  const pickPhotos = async (): Promise<File[]> => {
+    try {
+      const { photos } = await CapCamera.pickImages({
+        quality: 90,
+      });
+      const files: File[] = [];
+      for (const photo of photos) {
+        if (photo.webPath) {
+          const response = await fetch(photo.webPath);
+          const blob = await response.blob();
+          files.push(new File([blob], `gallery-${Date.now()}-${files.length}.jpg`, { type: "image/jpeg" }));
+        }
+      }
+      return files;
+    } catch (err) {
+      console.error("Erro ao escolher fotos da galeria:", err);
+      return [];
+    }
+  };
+
+  const handleTakePhotoForTask = async (taskObj: TaskDetail) => {
+    if (Capacitor.isNativePlatform()) {
+      const file = await takePhoto();
+      if (file) {
+        upload(taskObj, [file]);
+      }
+    } else {
+      const el = fileRefs.current[taskObj.id];
+      if (el) {
+        el.setAttribute("capture", "environment");
+        el.click();
+      }
+    }
+  };
+
+  const handlePickPhotosForTask = async (taskObj: TaskDetail) => {
+    if (Capacitor.isNativePlatform()) {
+      const files = await pickPhotos();
+      if (files.length > 0) {
+        upload(taskObj, files);
+      }
+    } else {
+      const el = fileRefs.current[taskObj.id];
+      if (el) {
+        el.removeAttribute("capture");
+        el.click();
+      }
+    }
+  };
 
   const { data: machines = [] } = useQuery({
     queryKey: ["machines"],
@@ -414,18 +483,31 @@ function MyTasks() {
                         className="hidden"
                         onChange={(e) => e.target.files && upload(t as TaskDetail, e.target.files)}
                       />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          fileRefs.current[t.id]?.click();
-                        }}
-                        disabled={uploading === t.id}
-                      >
-                        {uploading === t.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
-                        {photos.length > 0 ? `Fotos (${photos.length})` : "Enviar foto"}
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => e.stopPropagation()}
+                            disabled={uploading === t.id}
+                          >
+                            {uploading === t.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Camera className="h-3.5 w-3.5" />
+                            )}
+                            {photos.length > 0 ? `Fotos (${photos.length})` : "Enviar foto"}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenuItem onClick={() => handleTakePhotoForTask(t as TaskDetail)}>
+                            <Camera className="h-4 w-4 mr-2" /> Tirar Foto
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handlePickPhotosForTask(t as TaskDetail)}>
+                            <ImageIcon className="h-4 w-4 mr-2" /> Escolher da Galeria
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       {canComplete && (
                         <Button
                           size="sm"

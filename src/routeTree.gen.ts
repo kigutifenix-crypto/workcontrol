@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAllTasksRouteImport } from './routes/_authenticated.all-tasks'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedEmployeesRouteImport } from './routes/_authenticated.employees'
 import { Route as AuthenticatedMachinesRouteImport } from './routes/_authenticated.machines'
 import { Route as AuthenticatedMyTasksRouteImport } from './routes/_authenticated.my-tasks'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated.tasks'
@@ -43,6 +44,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedEmployeesRoute = AuthenticatedEmployeesRouteImport.update({
+  id: '/employees',
+  path: '/employees',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedMachinesRoute = AuthenticatedMachinesRouteImport.update({
   id: '/machines',
   path: '/machines',
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/all-tasks': typeof AuthenticatedAllTasksRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/employees': typeof AuthenticatedEmployeesRoute
   '/machines': typeof AuthenticatedMachinesRoute
   '/my-tasks': typeof AuthenticatedMyTasksRoute
   '/tasks': typeof AuthenticatedTasksRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/all-tasks': typeof AuthenticatedAllTasksRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/employees': typeof AuthenticatedEmployeesRoute
   '/machines': typeof AuthenticatedMachinesRoute
   '/my-tasks': typeof AuthenticatedMyTasksRoute
   '/tasks': typeof AuthenticatedTasksRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/all-tasks': typeof AuthenticatedAllTasksRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/employees': typeof AuthenticatedEmployeesRoute
   '/_authenticated/machines': typeof AuthenticatedMachinesRoute
   '/_authenticated/my-tasks': typeof AuthenticatedMyTasksRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/all-tasks'
     | '/dashboard'
+    | '/employees'
     | '/machines'
     | '/my-tasks'
     | '/tasks'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/all-tasks'
     | '/dashboard'
+    | '/employees'
     | '/machines'
     | '/my-tasks'
     | '/tasks'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/all-tasks'
     | '/_authenticated/dashboard'
+    | '/_authenticated/employees'
     | '/_authenticated/machines'
     | '/_authenticated/my-tasks'
     | '/_authenticated/tasks'
@@ -173,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/employees': {
+      id: '/_authenticated/employees'
+      path: '/employees'
+      fullPath: '/employees'
+      preLoaderRoute: typeof AuthenticatedEmployeesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/machines': {
       id: '/_authenticated/machines'
       path: '/machines'
@@ -207,6 +226,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedAllTasksRoute: typeof AuthenticatedAllTasksRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedEmployeesRoute: typeof AuthenticatedEmployeesRoute
   AuthenticatedMachinesRoute: typeof AuthenticatedMachinesRoute
   AuthenticatedMyTasksRoute: typeof AuthenticatedMyTasksRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
@@ -216,6 +236,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAllTasksRoute: AuthenticatedAllTasksRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedEmployeesRoute: AuthenticatedEmployeesRoute,
   AuthenticatedMachinesRoute: AuthenticatedMachinesRoute,
   AuthenticatedMyTasksRoute: AuthenticatedMyTasksRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
