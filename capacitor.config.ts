@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https',
-    url: 'http://10.100.2.23:8080',
+    url: 'https://workfenix.vercel.app',
     cleartext: true
   }
 };
