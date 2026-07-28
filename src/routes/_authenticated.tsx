@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
-  const { session, loading } = useAuth();
+  const { session, loading, isSupervisor } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,6 +51,29 @@ function AuthenticatedLayout() {
     };
     setupNotifications();
 
+    const triggerLocalNotification = async (title: string, body: string) => {
+      try {
+        if (Capacitor.isNativePlatform()) {
+          const { LocalNotifications } = await import("@capacitor/local-notifications");
+          await LocalNotifications.schedule({
+            notifications: [
+              {
+                id: Math.floor(Math.random() * 100000),
+                title,
+                body,
+                channelId: "tasks-channel",
+                sound: "default",
+              },
+            ],
+          });
+        } else if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(title, { body });
+        }
+      } catch (err) {
+        console.error("Failed to trigger local notification:", err);
+      }
+    };
+
     const userId = session.user.id;
     const channel = supabase
       .channel("new-tasks-realtime")
@@ -63,39 +86,103 @@ function AuthenticatedLayout() {
         },
         async (payload) => {
           const newTask = payload.new;
-          // Notify if task is assigned to this user AND created by someone else
-          if (newTask && newTask.assignee_id === userId && newTask.created_by !== userId) {
-            try {
-              if (Capacitor.isNativePlatform()) {
-                const { LocalNotifications } = await import("@capacitor/local-notifications");
-                await LocalNotifications.schedule({
-                  notifications: [
-                    {
-                       id: Math.floor(Math.random() * 100000),
-                       title: "Nova Tarefa Atribuída! 📋",
-                       body: `"${newTask.title}"\nPrioridade: ${newTask.priority || "Normal"} · Tipo: ${newTask.type || "Geral"}`,
-                       channelId: "tasks-channel",
-                       sound: "default",
-                    },
-                  ],
-                });
-              } else if ("Notification" in window && Notification.permission === "granted") {
-                new Notification("Nova Tarefa Atribuída! 📋", {
-                  body: `"${newTask.title}"\nPrioridade: ${newTask.priority || "Normal"} · Tipo: ${newTask.type || "Geral"}`,
-                });
+          if (!newTask) return;
+
+          if (isSupervisor) {
+            if (newTask.created_by !== userId) {
+              try {
+                const { data: profile } = await supabase
+                  .from("profiles")
+                  .select("name")
+                  .eq("id", newTask.created_by)
+                  .single();
+                const name = profile?.name || "Funcionário";
+                triggerLocalNotification(
+                  "Nova Tarefa Criada! 📋",
+                  `"${newTask.title}" foi criada por ${name}.`
+                );
+              } catch (err) {
+                console.error(err);
               }
-            } catch (err) {
-              console.error("Notification trigger error:", err);
+            }
+          } else {
+            if (newTask.assignee_id === userId && newTask.created_by !== userId) {
+              triggerLocalNotification(
+                "Nova Tarefa Atribuída! 📋",
+                `"${newTask.title}"\nPrioridade: ${newTask.priority || "Normal"} · Tipo: ${newTask.type || "Geral"}`
+              );
             }
           }
         }
-      )
-      .subscribe();
+      );
+
+    if (isSupervisor) {
+      channel.on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "tasks",
+        },
+        async (payload) => {
+          const oldTask = payload.old;
+          const newTask = payload.new;
+          if (!newTask) return;
+
+          // Only notify supervisor/admin if modified by someone else
+          if (newTask.assignee_id && newTask.assignee_id !== userId) {
+            try {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("name")
+                .eq("id", newTask.assignee_id)
+                .single();
+              const name = profile?.name || "Funcionário";
+
+              // A: Status changed
+              if (oldTask && oldTask.status !== newTask.status) {
+                const friendlyStatus: Record<string, string> = {
+                  pending: "Pendente",
+                  in_progress: "Em Andamento",
+                  review: "Em Revisão",
+                  done: "Concluída",
+                };
+                const statusName = friendlyStatus[newTask.status] || newTask.status;
+                triggerLocalNotification(
+                  "Status de Tarefa Alterado! 🔄",
+                  `${name} moveu "${newTask.title}" para ${statusName}.`
+                );
+              }
+
+              // B: Photo evidence uploaded
+              if (oldTask && oldTask.photo_url !== newTask.photo_url && newTask.photo_url) {
+                triggerLocalNotification(
+                  "Nova Evidência de Foto! 📸",
+                  `${name} anexou foto em "${newTask.title}".`
+                );
+              }
+
+              // C: Notes added or updated
+              if (oldTask && oldTask.notes !== newTask.notes && newTask.notes) {
+                triggerLocalNotification(
+                  "Nova Observação Adicionada! ✍️",
+                  `${name} adicionou nota em "${newTask.title}".`
+                );
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          }
+        }
+      );
+    }
+
+    channel.subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session?.user]);
+  }, [session?.user, isSupervisor]);
 
   if (loading || !session) {
     return (

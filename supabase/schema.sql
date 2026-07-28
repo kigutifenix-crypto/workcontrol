@@ -277,4 +277,5 @@ WHERE id IN (
 
 -- 13. HABILITAR REALTIME PARA A TABELA DE TAREFAS
 alter publication supabase_realtime add table tasks;
+alter table public.tasks replica identity full;
 
