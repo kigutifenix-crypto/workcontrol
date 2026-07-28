@@ -251,8 +251,13 @@ function MyTasks() {
     const checkNotificationPermission = async () => {
       try {
         if (Capacitor.isNativePlatform()) {
-          const permission = await LocalNotifications.checkPermissions();
-          if (permission.display !== "granted") {
+          if (Capacitor.isPluginAvailable("LocalNotifications")) {
+            const permission = await LocalNotifications.checkPermissions();
+            if (permission.display !== "granted") {
+              setShowNotificationBanner(true);
+            }
+          } else {
+            // Plugin not compiled in native APK binary
             setShowNotificationBanner(true);
           }
         } else if ("Notification" in window) {
@@ -270,12 +275,16 @@ function MyTasks() {
   const handleRequestNotificationPermission = async () => {
     try {
       if (Capacitor.isNativePlatform()) {
-        const permission = await LocalNotifications.requestPermissions();
-        if (permission.display === "granted") {
-          setShowNotificationBanner(false);
-          toast.success("Notificações ativadas com sucesso!");
+        if (Capacitor.isPluginAvailable("LocalNotifications")) {
+          const permission = await LocalNotifications.requestPermissions();
+          if (permission.display === "granted") {
+            setShowNotificationBanner(false);
+            toast.success("Notificações ativadas com sucesso!");
+          } else {
+            toast.error("Permissão de notificações recusada.");
+          }
         } else {
-          toast.error("Permissão de notificações recusada.");
+          toast.error("Plugin de notificações indisponível. Por favor, gere um novo APK no Android Studio para incluir o plugin nativo de notificações.");
         }
       } else if ("Notification" in window) {
         const result = await Notification.requestPermission();
@@ -285,6 +294,8 @@ function MyTasks() {
         } else {
           toast.error("Permissão de notificações recusada.");
         }
+      } else {
+        toast.error("Notificações não são suportadas neste navegador.");
       }
     } catch (err) {
       console.error(err);
