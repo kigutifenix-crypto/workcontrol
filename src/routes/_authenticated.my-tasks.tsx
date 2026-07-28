@@ -7,9 +7,10 @@ import { useAuth } from "@/lib/auth";
 import { STATUS, TASK_TYPES, PRIORITIES, typeIcon, priorityTone, parsePhotoUrls, formatPhotoUrls } from "@/lib/task-utils";
 import { TaskDetailModal, type TaskDetail } from "@/components/task-detail-modal";
 import { MachineFormFields, resolveOrCreateMachine } from "@/components/machine-selector";
-import { Camera, CheckCircle2, Loader2, Play, Plus, MoreVertical, Eye, Pencil, Trash2, ImageIcon } from "lucide-react";
+import { Camera, CheckCircle2, Loader2, Play, Plus, MoreVertical, Eye, Pencil, Trash2, ImageIcon, Bell } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { Camera as CapCamera, CameraResultType } from "@capacitor/camera";
+import { LocalNotifications } from "@capacitor/local-notifications";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -244,6 +245,53 @@ function MyTasks() {
     }
   };
 
+  const [showNotificationBanner, setShowNotificationBanner] = useState(false);
+
+  useEffect(() => {
+    const checkNotificationPermission = async () => {
+      try {
+        if (Capacitor.isNativePlatform()) {
+          const permission = await LocalNotifications.checkPermissions();
+          if (permission.display !== "granted") {
+            setShowNotificationBanner(true);
+          }
+        } else if ("Notification" in window) {
+          if (Notification.permission !== "granted") {
+            setShowNotificationBanner(true);
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao verificar permissões de notificação:", err);
+      }
+    };
+    checkNotificationPermission();
+  }, []);
+
+  const handleRequestNotificationPermission = async () => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const permission = await LocalNotifications.requestPermissions();
+        if (permission.display === "granted") {
+          setShowNotificationBanner(false);
+          toast.success("Notificações ativadas com sucesso!");
+        } else {
+          toast.error("Permissão de notificações recusada.");
+        }
+      } else if ("Notification" in window) {
+        const result = await Notification.requestPermission();
+        if (result === "granted") {
+          setShowNotificationBanner(false);
+          toast.success("Notificações ativadas no navegador!");
+        } else {
+          toast.error("Permissão de notificações recusada.");
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Falha ao configurar notificações.");
+    }
+  };
+
   const pending = tasks.filter((t) => t.status !== "done");
   const done = tasks.filter((t) => t.status === "done");
 
@@ -332,6 +380,26 @@ function MyTasks() {
         </Dialog>
       }
     >
+      {showNotificationBanner && (
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-2xl border border-warning/30 bg-warning/5 text-warning-foreground shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-warning/10 text-warning shrink-0">
+              <Bell className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm">Permita notificações no celular</h4>
+              <p className="text-xs opacity-90 mt-0.5">Receba alertas em tempo real sempre que um supervisor criar uma tarefa para você.</p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={handleRequestNotificationPermission}
+            className="bg-warning text-warning-foreground hover:bg-warning/90 font-semibold shadow-sm shrink-0"
+          >
+            Ativar Notificações
+          </Button>
+        </div>
+      )}
       {isLoading ? (
         <div className="grid place-items-center py-24"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
       ) : tasks.length === 0 ? (

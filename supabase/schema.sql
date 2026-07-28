@@ -275,3 +275,6 @@ WHERE id IN (
   SELECT id FROM auth.users WHERE LOWER(email) = 'kigutifenix@gmail.com'
 );
 
+-- 13. HABILITAR REALTIME PARA A TABELA DE TAREFAS
+alter publication supabase_realtime add table tasks;
+
