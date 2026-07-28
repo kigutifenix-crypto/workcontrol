@@ -10,7 +10,6 @@ import { MachineFormFields, resolveOrCreateMachine } from "@/components/machine-
 import { Camera, CheckCircle2, Loader2, Play, Plus, MoreVertical, Eye, Pencil, Trash2, ImageIcon, Bell } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { Camera as CapCamera, CameraResultType } from "@capacitor/camera";
-import { LocalNotifications } from "@capacitor/local-notifications";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -252,6 +251,7 @@ function MyTasks() {
       try {
         if (Capacitor.isNativePlatform()) {
           if (Capacitor.isPluginAvailable("LocalNotifications")) {
+            const { LocalNotifications } = await import("@capacitor/local-notifications");
             const permission = await LocalNotifications.checkPermissions();
             if (permission.display !== "granted") {
               setShowNotificationBanner(true);
@@ -276,6 +276,7 @@ function MyTasks() {
     try {
       if (Capacitor.isNativePlatform()) {
         if (Capacitor.isPluginAvailable("LocalNotifications")) {
+          const { LocalNotifications } = await import("@capacitor/local-notifications");
           const permission = await LocalNotifications.requestPermissions();
           if (permission.display === "granted") {
             setShowNotificationBanner(false);

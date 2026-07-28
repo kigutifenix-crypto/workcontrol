@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Capacitor } from "@capacitor/core";
-import { LocalNotifications } from "@capacitor/local-notifications";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -25,6 +24,7 @@ function AuthenticatedLayout() {
     const setupNotifications = async () => {
       try {
         if (Capacitor.isNativePlatform()) {
+          const { LocalNotifications } = await import("@capacitor/local-notifications");
           const permission = await LocalNotifications.checkPermissions();
           if (permission.display !== "granted") {
             await LocalNotifications.requestPermissions();
@@ -67,6 +67,7 @@ function AuthenticatedLayout() {
           if (newTask && newTask.assignee_id === userId && newTask.created_by !== userId) {
             try {
               if (Capacitor.isNativePlatform()) {
+                const { LocalNotifications } = await import("@capacitor/local-notifications");
                 await LocalNotifications.schedule({
                   notifications: [
                     {
