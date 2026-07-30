@@ -55,6 +55,8 @@ CREATE TABLE IF NOT EXISTS public.tasks (
   notes TEXT,
   created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   completed_at TIMESTAMPTZ,
+  started_at TIMESTAMPTZ,
+  intervals JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

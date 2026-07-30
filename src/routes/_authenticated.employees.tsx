@@ -119,7 +119,7 @@ function EmployeesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tasks")
-        .select("id,title,type,status,priority,description,assignee_id,machine_id,photo_url,notes,created_at,completed_at")
+        .select("id,title,type,status,priority,description,assignee_id,machine_id,photo_url,notes,created_at,completed_at,started_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -255,11 +255,11 @@ function EmployeesPage() {
 
     // Chart 4: Average time per task type (completed tasks)
     const completedTasksList = periodTasks.filter(
-      (t) => t.status === "done" && t.completed_at && t.created_at
+      (t) => t.status === "done" && t.completed_at
     );
     const avgTimeMap: Record<string, { sum: number; count: number }> = {};
     completedTasksList.forEach((t) => {
-      const start = new Date(t.created_at).getTime();
+      const start = new Date(t.started_at || t.created_at).getTime();
       const end = new Date(t.completed_at!).getTime();
       const durationMinutes = (end - start) / (1000 * 60);
       if (durationMinutes >= 0) {

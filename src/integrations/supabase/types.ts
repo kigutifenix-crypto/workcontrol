@@ -83,6 +83,8 @@ export type Database = {
           description: string | null
           id: string
           machine_id: string | null
+          started_at: string | null
+          intervals: Json | null
           notes: string | null
           photo_url: string | null
           priority: string
@@ -99,6 +101,8 @@ export type Database = {
           description?: string | null
           id?: string
           machine_id?: string | null
+          started_at?: string | null
+          intervals?: Json | null
           notes?: string | null
           photo_url?: string | null
           priority?: string
@@ -115,6 +119,8 @@ export type Database = {
           description?: string | null
           id?: string
           machine_id?: string | null
+          started_at?: string | null
+          intervals?: Json | null
           notes?: string | null
           photo_url?: string | null
           priority?: string

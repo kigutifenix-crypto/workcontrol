@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Calendar,
@@ -18,6 +19,7 @@ import {
   ImageIcon,
   Plus,
   ZoomIn,
+  Activity,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -33,6 +35,7 @@ import {
   parsePhotoUrls,
   formatPhotoUrls,
   type Status,
+  type TaskInterval,
 } from "@/lib/task-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,6 +79,8 @@ export type TaskDetail = {
   notes: string | null;
   created_at: string;
   completed_at: string | null;
+  started_at: string | null;
+  intervals?: TaskInterval[] | null;
   created_by?: string | null;
 };
 
@@ -88,6 +93,7 @@ type TaskDetailModalProps = {
 
 export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: TaskDetailModalProps) {
   const { user, isSupervisor, isAdmin } = useAuth();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -215,6 +221,12 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
         patch.completed_at = new Date().toISOString();
       } else if (task.status === "done") {
         patch.completed_at = null;
+      }
+
+      if (newStatus !== "pending" && !task.started_at) {
+        patch.started_at = new Date().toISOString();
+      } else if (newStatus === "pending") {
+        patch.started_at = null;
       }
 
       const { error } = await supabase.from("tasks").update(patch as never).eq("id", task.id);
@@ -429,7 +441,18 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
               </div>
 
               {/* Action Menu */}
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-3 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onOpenChange(false);
+                    navigate({ to: "/task/$taskId", params: { taskId: task.id } });
+                  }}
+                  className="text-xs h-9 px-3 gap-1.5"
+                >
+                  <Activity className="h-4 w-4 text-primary" /> Painel Completo
+                </Button>
                 {canManage && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -603,7 +626,7 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
             /* Normal View Details */
             <div className="space-y-6 py-2">
               {/* Meta Attributes Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 <div className="rounded-xl border border-border/50 bg-surface-elevated p-3">
                   <div className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1 mb-1">
                     <User className="h-3 w-3" /> Responsável
@@ -642,6 +665,20 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
                   <span className="text-[10px] text-muted-foreground block">
                     {new Date(task.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                   </span>
+                </div>
+
+                <div className="rounded-xl border border-border/50 bg-surface-elevated p-3">
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1 mb-1">
+                    <Clock className="h-3 w-3" /> Início
+                  </div>
+                  <div className="font-semibold text-sm text-foreground">
+                    {task.started_at ? new Date(task.started_at).toLocaleDateString("pt-BR") : "Pendente"}
+                  </div>
+                  {task.started_at && (
+                    <span className="text-[10px] text-muted-foreground block">
+                      Iniciado às {new Date(task.started_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  )}
                 </div>
 
                 <div className="rounded-xl border border-border/50 bg-surface-elevated p-3">

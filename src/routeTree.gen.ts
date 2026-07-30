@@ -17,8 +17,10 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedEmployeesRouteImport } from './routes/_authenticated.employees'
 import { Route as AuthenticatedMachinesRouteImport } from './routes/_authenticated.machines'
 import { Route as AuthenticatedMyTasksRouteImport } from './routes/_authenticated.my-tasks'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated.reports'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated.tasks'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated.users'
+import { Route as AuthenticatedTaskTaskIdRouteImport } from './routes/_authenticated.task.$taskId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -59,6 +61,11 @@ const AuthenticatedMyTasksRoute = AuthenticatedMyTasksRouteImport.update({
   path: '/my-tasks',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
@@ -67,6 +74,11 @@ const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
 const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedTaskTaskIdRoute = AuthenticatedTaskTaskIdRouteImport.update({
+  id: '/task/$taskId',
+  path: '/task/$taskId',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 
@@ -78,8 +90,10 @@ export interface FileRoutesByFullPath {
   '/employees': typeof AuthenticatedEmployeesRoute
   '/machines': typeof AuthenticatedMachinesRoute
   '/my-tasks': typeof AuthenticatedMyTasksRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/users': typeof AuthenticatedUsersRoute
+  '/task/$taskId': typeof AuthenticatedTaskTaskIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -89,8 +103,10 @@ export interface FileRoutesByTo {
   '/employees': typeof AuthenticatedEmployeesRoute
   '/machines': typeof AuthenticatedMachinesRoute
   '/my-tasks': typeof AuthenticatedMyTasksRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/users': typeof AuthenticatedUsersRoute
+  '/task/$taskId': typeof AuthenticatedTaskTaskIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -102,8 +118,10 @@ export interface FileRoutesById {
   '/_authenticated/employees': typeof AuthenticatedEmployeesRoute
   '/_authenticated/machines': typeof AuthenticatedMachinesRoute
   '/_authenticated/my-tasks': typeof AuthenticatedMyTasksRoute
+  '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
+  '/_authenticated/task/$taskId': typeof AuthenticatedTaskTaskIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -115,8 +133,10 @@ export interface FileRouteTypes {
     | '/employees'
     | '/machines'
     | '/my-tasks'
+    | '/reports'
     | '/tasks'
     | '/users'
+    | '/task/$taskId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -126,8 +146,10 @@ export interface FileRouteTypes {
     | '/employees'
     | '/machines'
     | '/my-tasks'
+    | '/reports'
     | '/tasks'
     | '/users'
+    | '/task/$taskId'
   id:
     | '__root__'
     | '/'
@@ -138,8 +160,10 @@ export interface FileRouteTypes {
     | '/_authenticated/employees'
     | '/_authenticated/machines'
     | '/_authenticated/my-tasks'
+    | '/_authenticated/reports'
     | '/_authenticated/tasks'
     | '/_authenticated/users'
+    | '/_authenticated/task/$taskId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -206,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMyTasksRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/tasks': {
       id: '/_authenticated/tasks'
       path: '/tasks'
@@ -220,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/task/$taskId': {
+      id: '/_authenticated/task/$taskId'
+      path: '/task/$taskId'
+      fullPath: '/task/$taskId'
+      preLoaderRoute: typeof AuthenticatedTaskTaskIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -229,8 +267,10 @@ interface AuthenticatedRouteChildren {
   AuthenticatedEmployeesRoute: typeof AuthenticatedEmployeesRoute
   AuthenticatedMachinesRoute: typeof AuthenticatedMachinesRoute
   AuthenticatedMyTasksRoute: typeof AuthenticatedMyTasksRoute
+  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
+  AuthenticatedTaskTaskIdRoute: typeof AuthenticatedTaskTaskIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -239,8 +279,10 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedEmployeesRoute: AuthenticatedEmployeesRoute,
   AuthenticatedMachinesRoute: AuthenticatedMachinesRoute,
   AuthenticatedMyTasksRoute: AuthenticatedMyTasksRoute,
+  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
+  AuthenticatedTaskTaskIdRoute: AuthenticatedTaskTaskIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

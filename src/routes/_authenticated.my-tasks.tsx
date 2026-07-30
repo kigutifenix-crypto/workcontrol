@@ -4,10 +4,10 @@ import { useRef, useState, useEffect } from "react";
 import { AppShell } from "@/components/app-shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { STATUS, TASK_TYPES, PRIORITIES, typeIcon, priorityTone, parsePhotoUrls, formatPhotoUrls } from "@/lib/task-utils";
+import { STATUS, TASK_TYPES, PRIORITIES, typeIcon, priorityTone, parsePhotoUrls, formatPhotoUrls, type TaskInterval } from "@/lib/task-utils";
 import { TaskDetailModal, type TaskDetail } from "@/components/task-detail-modal";
 import { MachineFormFields, resolveOrCreateMachine } from "@/components/machine-selector";
-import { Camera, CheckCircle2, Loader2, Play, Plus, MoreVertical, Eye, Pencil, Trash2, ImageIcon, Bell } from "lucide-react";
+import { Camera, CheckCircle2, Loader2, Play, Pause, Plus, MoreVertical, Eye, Pencil, Trash2, ImageIcon, Bell } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { Camera as CapCamera, CameraResultType } from "@capacitor/camera";
 import { Button } from "@/components/ui/button";
@@ -193,9 +193,24 @@ function MyTasks() {
   });
 
   const setStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status, currentStartedAt, intervals }: { id: string; status: string; currentStartedAt?: string | null; intervals?: TaskInterval[] }) => {
       const patch: Record<string, unknown> = { status };
-      if (status === "done") patch.completed_at = new Date().toISOString();
+      if (status === "done") {
+        patch.completed_at = new Date().toISOString();
+      } else {
+        patch.completed_at = null;
+      }
+      
+      if (status !== "pending" && !currentStartedAt) {
+        patch.started_at = new Date().toISOString();
+      } else if (status === "pending") {
+        patch.started_at = null;
+      }
+
+      if (intervals) {
+        patch.intervals = intervals as any;
+      }
+
       const { error } = await supabase.from("tasks").update(patch as never).eq("id", id);
       if (error) throw error;
     },
@@ -454,7 +469,10 @@ function MyTasks() {
                             </span>
                           </div>
                           <h3 className="mt-2 font-display text-lg font-bold leading-tight">{t.title}</h3>
-                          <p className="text-xs text-muted-foreground mt-0.5">{t.type} · {new Date(t.created_at).toLocaleDateString("pt-BR")}</p>
+                           <p className="text-xs text-muted-foreground mt-0.5">
+                            {t.type} · Criada em {new Date(t.created_at).toLocaleDateString("pt-BR")}
+                            {t.started_at && ` · Iniciada em ${new Date(t.started_at).toLocaleDateString("pt-BR")}`}
+                          </p>
                         </div>
                       </div>
 
@@ -497,7 +515,7 @@ function MyTasks() {
                               disabled={t.status === s.id}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setStatus.mutate({ id: t.id, status: s.id });
+                                setStatus.mutate({ id: t.id, status: s.id, currentStartedAt: t.started_at });
                               }}
                               className="text-xs"
                             >
@@ -548,13 +566,66 @@ function MyTasks() {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setStatus.mutate({ id: t.id, status: "progress" });
+                             setStatus.mutate({ id: t.id, status: "progress", currentStartedAt: t.started_at });
                           }}
                           className="bg-info/20 text-info hover:bg-info/30"
                         >
                           <Play className="h-3.5 w-3.5" /> Iniciar
                         </Button>
                       )}
+
+                      {t.status === "progress" && (
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newIntervals = [...(t.intervals as unknown as TaskInterval[] || [])];
+                            newIntervals.push({
+                              paused_at: new Date().toISOString(),
+                              resumed_at: null,
+                              reason: "Intervalo de descanso",
+                            });
+                            setStatus.mutate({
+                              id: t.id,
+                              status: "paused",
+                              currentStartedAt: t.started_at,
+                              intervals: newIntervals,
+                            });
+                          }}
+                          className="bg-purple-600/20 text-purple-400 hover:bg-purple-600/30"
+                        >
+                          <Pause className="h-3.5 w-3.5" /> Pausar
+                        </Button>
+                      )}
+
+                      {t.status === "paused" && (
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newIntervals = [...(t.intervals as unknown as TaskInterval[] || [])];
+                            if (newIntervals.length > 0) {
+                              const lastIdx = newIntervals.length - 1;
+                              if (!newIntervals[lastIdx].resumed_at) {
+                                newIntervals[lastIdx] = {
+                                  ...newIntervals[lastIdx],
+                                  resumed_at: new Date().toISOString(),
+                                };
+                              }
+                            }
+                            setStatus.mutate({
+                              id: t.id,
+                              status: "progress",
+                              currentStartedAt: t.started_at,
+                              intervals: newIntervals,
+                            });
+                          }}
+                          className="bg-info/20 text-info hover:bg-info/30"
+                        >
+                          <Play className="h-3.5 w-3.5" /> Retomar
+                        </Button>
+                      )}
+
                       <input
                         ref={(el) => { fileRefs.current[t.id] = el; }}
                         type="file"
@@ -593,7 +664,22 @@ function MyTasks() {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setStatus.mutate({ id: t.id, status: "done" });
+                            let newIntervals = [...(t.intervals as unknown as TaskInterval[] || [])];
+                            if (t.status === "paused" && newIntervals.length > 0) {
+                              const lastIdx = newIntervals.length - 1;
+                              if (!newIntervals[lastIdx].resumed_at) {
+                                newIntervals[lastIdx] = {
+                                  ...newIntervals[lastIdx],
+                                  resumed_at: new Date().toISOString(),
+                                };
+                              }
+                            }
+                            setStatus.mutate({
+                              id: t.id,
+                              status: "done",
+                              currentStartedAt: t.started_at,
+                              intervals: newIntervals,
+                            });
                           }}
                           className="bg-gradient-ember shadow-ember"
                         >

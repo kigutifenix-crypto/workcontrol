@@ -13,6 +13,7 @@ import {
   Users,
   ClipboardList,
   Briefcase,
+  BarChart3,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -54,7 +55,7 @@ export function AppShell({ children, title, subtitle, actions }: {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 w-72 bg-gradient-surface border-r border-border/60 flex flex-col transition-transform lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 w-72 bg-gradient-surface border-r border-border/60 flex flex-col transition-transform lg:translate-x-0 print:hidden",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -150,6 +151,29 @@ export function AppShell({ children, title, subtitle, actions }: {
               </span>
             </Link>
           )}
+          {isSupervisor && (
+            <Link
+              to="/reports"
+              onClick={() => setOpen(false)}
+              className={cn(
+                "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
+                pathname === "/reports" || pathname.startsWith("/reports/")
+                  ? "bg-primary/10 text-foreground shadow-[inset_2px_0_0_var(--color-primary)]"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+            >
+              <span className={cn(
+                "grid h-9 w-9 place-items-center rounded-lg transition-colors",
+                pathname === "/reports" ? "bg-gradient-ember text-primary-foreground shadow-ember" : "bg-accent/60 group-hover:bg-accent"
+              )}>
+                <BarChart3 className="h-4 w-4" />
+              </span>
+              <span className="flex-1">
+                <span className="block font-semibold">Relatórios</span>
+                <span className="block text-[11px] text-muted-foreground">Análise e exportações</span>
+              </span>
+            </Link>
+          )}
           {isAdmin && (
             <Link
               to="/users"
@@ -184,12 +208,12 @@ export function AppShell({ children, title, subtitle, actions }: {
       </aside>
 
       {open && (
-        <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setOpen(false)} />
+        <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden print:hidden" onClick={() => setOpen(false)} />
       )}
 
       {/* Main */}
-      <div className="lg:pl-72">
-        <header className="sticky top-0 z-20 border-b border-border/60 bg-background/80 backdrop-blur-xl">
+      <div className="lg:pl-72 print:pl-0">
+        <header className="sticky top-0 z-20 border-b border-border/60 bg-background/80 backdrop-blur-xl print:hidden">
           <div className="flex items-center gap-4 px-4 sm:px-8 py-4">
             <button
               onClick={() => setOpen(true)}
@@ -205,7 +229,7 @@ export function AppShell({ children, title, subtitle, actions }: {
           </div>
         </header>
 
-        <main className="p-4 sm:p-8">{children}</main>
+        <main className="p-4 sm:p-8 print:p-0">{children}</main>
       </div>
     </div>
   );

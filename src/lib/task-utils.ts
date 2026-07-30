@@ -1,13 +1,20 @@
-export const TASK_TYPES = ["Montagem", "Pintura", "Limpeza", "Manutenção", "Embalagem"] as const;
+export const TASK_TYPES = ["Montagem", "Pintura", "Limpeza", "Manutenção", "Embalagem", "Sistema"] as const;
 export type TaskType = (typeof TASK_TYPES)[number];
 
 export const STATUS = [
   { id: "pending", label: "Pendente", tone: "bg-muted text-muted-foreground border-border" },
   { id: "progress", label: "Em Andamento", tone: "bg-info/15 text-info border-info/30" },
+  { id: "paused", label: "Pausado", tone: "bg-purple-500/15 text-purple-400 border-purple-500/30" },
   { id: "review", label: "Revisão", tone: "bg-warning/15 text-warning border-warning/30" },
   { id: "done", label: "Concluído", tone: "bg-success/15 text-success border-success/30" },
 ] as const;
 export type Status = (typeof STATUS)[number]["id"];
+
+export type TaskInterval = {
+  paused_at: string;
+  resumed_at: string | null;
+  reason?: string;
+};
 
 export const PRIORITIES = ["Baixa", "Normal", "Alta", "Urgente"] as const;
 export type Priority = (typeof PRIORITIES)[number];
@@ -28,6 +35,7 @@ export function typeIcon(t: string): string {
     case "Limpeza": return "🧽";
     case "Manutenção": return "🛠️";
     case "Embalagem": return "📦";
+    case "Sistema": return "💻";
     default: return "⚙️";
   }
 }

@@ -123,9 +123,24 @@ function AllTasksPage() {
 
   // Status Change Mutation
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: Status }) => {
+    mutationFn: async ({ id, status, currentStartedAt, intervals }: { id: string; status: Status; currentStartedAt?: string | null; intervals?: any[] }) => {
       const patch: Record<string, unknown> = { status };
-      if (status === "done") patch.completed_at = new Date().toISOString();
+      if (status === "done") {
+        patch.completed_at = new Date().toISOString();
+      } else {
+        patch.completed_at = null;
+      }
+      
+      if (status !== "pending" && !currentStartedAt) {
+        patch.started_at = new Date().toISOString();
+      } else if (status === "pending") {
+        patch.started_at = null;
+      }
+
+      if (intervals) {
+        patch.intervals = intervals;
+      }
+
       const { error } = await supabase.from("tasks").update(patch as never).eq("id", id);
       if (error) throw error;
     },
@@ -571,7 +586,31 @@ function AllTasksPage() {
                               disabled={t.status === s.id}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                updateStatus.mutate({ id: t.id, status: s.id });
+                                
+                                const newIntervals = [...((t.intervals as any[]) || [])];
+                                if (s.id === "paused" && t.status === "progress") {
+                                  newIntervals.push({
+                                    paused_at: new Date().toISOString(),
+                                    resumed_at: null,
+                                    reason: "Alterado na Lista",
+                                  });
+                                } else if (s.id === "progress" && t.status === "paused") {
+                                  if (newIntervals.length > 0 && !newIntervals[newIntervals.length - 1].resumed_at) {
+                                    newIntervals[newIntervals.length - 1] = {
+                                      ...newIntervals[newIntervals.length - 1],
+                                      resumed_at: new Date().toISOString(),
+                                    };
+                                  }
+                                } else if (s.id === "done" && t.status === "paused") {
+                                  if (newIntervals.length > 0 && !newIntervals[newIntervals.length - 1].resumed_at) {
+                                    newIntervals[newIntervals.length - 1] = {
+                                      ...newIntervals[newIntervals.length - 1],
+                                      resumed_at: new Date().toISOString(),
+                                    };
+                                  }
+                                }
+
+                                updateStatus.mutate({ id: t.id, status: s.id, currentStartedAt: t.started_at, intervals: newIntervals });
                               }}
                               className="text-xs"
                             >
