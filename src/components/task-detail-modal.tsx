@@ -229,6 +229,35 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
         patch.started_at = null;
       }
 
+      // Handle interval logic for status transitions
+      const newIntervals = [...(task.intervals || [])];
+      if (newStatus === "paused" && task.status === "progress") {
+        newIntervals.push({
+          paused_at: new Date().toISOString(),
+          resumed_at: null,
+          reason: "Alterado nos detalhes da tarefa",
+        });
+        patch.intervals = newIntervals;
+      } else if (newStatus === "progress" && task.status === "paused") {
+        if (newIntervals.length > 0 && !newIntervals[newIntervals.length - 1].resumed_at) {
+          newIntervals[newIntervals.length - 1] = {
+            ...newIntervals[newIntervals.length - 1],
+            resumed_at: new Date().toISOString(),
+          };
+        }
+        patch.intervals = newIntervals;
+      } else if ((newStatus === "done" || newStatus === "review") && task.status === "paused") {
+        if (newIntervals.length > 0 && !newIntervals[newIntervals.length - 1].resumed_at) {
+          newIntervals[newIntervals.length - 1] = {
+            ...newIntervals[newIntervals.length - 1],
+            resumed_at: new Date().toISOString(),
+          };
+        }
+        patch.intervals = newIntervals;
+      } else if (newStatus === "pending") {
+        patch.intervals = [];
+      }
+
       const { error } = await supabase.from("tasks").update(patch as never).eq("id", task.id);
       if (error) throw error;
     },

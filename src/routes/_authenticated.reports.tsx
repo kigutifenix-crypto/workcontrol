@@ -211,6 +211,7 @@ function ReportsPage() {
                 pending: 0,
                 activeMs: 0,
                 pausedMs: 0,
+                pauseCount: 0,
               };
             }
 
@@ -225,6 +226,9 @@ function ReportsPage() {
             const timings = calculateTaskTimings(t);
             record.activeMs += timings.activeMs;
             record.pausedMs += timings.pausedMs;
+            
+            const taskIntervals = Array.isArray(t.intervals) ? t.intervals : [];
+            record.pauseCount += taskIntervals.length;
           });
 
           const reportData = Object.values(employeeMap).map((emp: any) => {
@@ -261,6 +265,7 @@ function ReportsPage() {
             const timings = calculateTaskTimings(t);
             const prof = t.assignee_id ? profilesMap.get(t.assignee_id) : null;
             const mach = t.machine_id ? machinesMap.get(t.machine_id) : null;
+            const taskIntervals = Array.isArray(t.intervals) ? t.intervals : [];
 
             return {
               id: t.id,
@@ -276,6 +281,7 @@ function ReportsPage() {
               activeMs: timings.activeMs,
               activeHrsText: formatHrsMin(timings.activeMs),
               pausedHrsText: formatHrsMin(timings.pausedMs),
+              pauseCount: taskIntervals.length,
             };
           });
 
@@ -415,7 +421,7 @@ function ReportsPage() {
     let filename = `relatorio-${type}-${generatedReport.startDate}-a-${generatedReport.endDate}.csv`;
 
     if (type === "desempenho") {
-      headers = ["Funcionário", "Crachá", "Total de Tarefas", "Concluídas", "Em Andamento", "Pausadas", "Em Revisão", "Pendentes", "Taxa de Conclusão", "Tempo Ativo", "Tempo Pausado"];
+      headers = ["Funcionário", "Crachá", "Total de Tarefas", "Concluídas", "Em Andamento", "Pausadas", "Em Revisão", "Pendentes", "Taxa de Conclusão", "Tempo Ativo", "Qtd. Pausas", "Tempo Pausado"];
       rows = data.map((d) => [
         d.name,
         d.badge,
@@ -427,10 +433,11 @@ function ReportsPage() {
         d.pending,
         `${d.completionRate}%`,
         d.activeHrsText,
+        d.pauseCount,
         d.pausedHrsText,
       ]);
     } else if (type === "tarefas") {
-      headers = ["Título", "Categoria", "Status", "Prioridade", "Responsável", "Máquina", "Criada em", "Iniciada em", "Concluída em", "Tempo Ativo Trabalhado", "Tempo Pausado"];
+      headers = ["Título", "Categoria", "Status", "Prioridade", "Responsável", "Máquina", "Criada em", "Iniciada em", "Concluída em", "Tempo Ativo Trabalhado", "Qtd. Pausas", "Tempo Pausado"];
       rows = data.map((d) => [
         d.title,
         d.type,
@@ -442,6 +449,7 @@ function ReportsPage() {
         d.started_at,
         d.completed_at,
         d.activeHrsText,
+        d.pauseCount,
         d.pausedHrsText,
       ]);
     } else if (type === "maquinas") {
@@ -745,7 +753,8 @@ function ReportsPage() {
                         <th className="p-3 text-center">Pausadas</th>
                         <th className="p-3 text-center">Taxa Conclusão</th>
                         <th className="p-3 text-right">Tempo Ativo</th>
-                        <th className="p-3 text-right">Pausas</th>
+                        <th className="p-3 text-center">Qtd. Pausas</th>
+                        <th className="p-3 text-right">Tempo Pausado</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40 text-xs">
@@ -759,6 +768,7 @@ function ReportsPage() {
                           <td className="p-3 text-center tabular-nums text-purple-400">{d.paused}</td>
                           <td className="p-3 text-center font-bold text-foreground">{d.completionRate}%</td>
                           <td className="p-3 text-right tabular-nums text-foreground">{d.activeHrsText}</td>
+                          <td className="p-3 text-center tabular-nums text-purple-400 font-semibold">{d.pauseCount}</td>
                           <td className="p-3 text-right tabular-nums text-muted-foreground">{d.pausedHrsText}</td>
                         </tr>
                       ))}
@@ -809,7 +819,8 @@ function ReportsPage() {
                         <th className="p-3">Máquina</th>
                         <th className="p-3">Criação</th>
                         <th className="p-3 text-right">Ativo</th>
-                        <th className="p-3 text-right">Pausas</th>
+                        <th className="p-3 text-center">Qtd. Pausas</th>
+                        <th className="p-3 text-right">Tempo Pausado</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40 text-xs">
@@ -833,6 +844,7 @@ function ReportsPage() {
                             <td className="p-3 text-muted-foreground">{d.machine}</td>
                             <td className="p-3 text-muted-foreground whitespace-nowrap">{d.created_at.split(" ")[0]}</td>
                             <td className="p-3 text-right tabular-nums text-foreground">{d.activeHrsText}</td>
+                            <td className="p-3 text-center tabular-nums text-purple-400 font-semibold">{d.pauseCount}</td>
                             <td className="p-3 text-right tabular-nums text-muted-foreground">{d.pausedHrsText}</td>
                           </tr>
                         );
