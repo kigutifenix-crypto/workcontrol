@@ -312,7 +312,7 @@ function EmployeesPage() {
       priorityData,
       avgTimeChartData,
     };
-  }, [selectedEmployee, tasksByAssignee, timeRange, selectedDate, machines]);
+  }, [selectedEmployee, tasksByAssignee, timeRange, selectedDate, machines, selectedMonth, selectedYear, selectedWeek]);
 
   // Productivity timeline evolution (Area Chart over the last 15 days)
   const productivityEvolutionData = useMemo(() => {
