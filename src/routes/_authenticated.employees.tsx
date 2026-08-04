@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TaskDetailModal, type TaskDetail } from "@/components/task-detail-modal";
 import { typeIcon, priorityTone, STATUS } from "@/lib/task-utils";
 import { cn } from "@/lib/utils";
@@ -60,6 +61,21 @@ type EmployeeProfile = {
 
 type PresetRange = "all" | "today" | "week" | "month" | "day";
 
+const MONTHS_PT = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+];
+
+const YEARS = [2024, 2025, 2026, 2027];
+
+const WEEKS_PT = [
+  { id: 1, label: "Semana 1 (Dias 1 a 7)" },
+  { id: 2, label: "Semana 2 (Dias 8 a 14)" },
+  { id: 3, label: "Semana 3 (Dias 15 a 21)" },
+  { id: 4, label: "Semana 4 (Dias 22 a 28)" },
+  { id: 5, label: "Semana 5 (Dias 29 em diante)" },
+];
+
 function EmployeesPage() {
   const { isSupervisor } = useAuth();
   
@@ -71,6 +87,9 @@ function EmployeesPage() {
   // Time range filters
   const [timeRange, setTimeRange] = useState<PresetRange>("all");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedWeek, setSelectedWeek] = useState<number>(1); // 1 to 5
 
   // Task viewing states
   const [selectedTask, setSelectedTask] = useState<TaskDetail | null>(null);
@@ -170,15 +189,20 @@ function EmployeesPage() {
     }
     
     if (timeRange === "week") {
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(today.getDate() - 7);
-      return taskDate >= oneWeekAgo && taskDate <= today;
+      if (taskDate.getMonth() !== selectedMonth || taskDate.getFullYear() !== selectedYear) {
+        return false;
+      }
+      const day = taskDate.getDate();
+      if (selectedWeek === 1) return day >= 1 && day <= 7;
+      if (selectedWeek === 2) return day >= 8 && day <= 14;
+      if (selectedWeek === 3) return day >= 15 && day <= 21;
+      if (selectedWeek === 4) return day >= 22 && day <= 28;
+      if (selectedWeek === 5) return day >= 29;
+      return true;
     }
     
     if (timeRange === "month") {
-      const oneMonthAgo = new Date();
-      oneMonthAgo.setDate(today.getDate() - 30);
-      return taskDate >= oneMonthAgo && taskDate <= today;
+      return taskDate.getMonth() === selectedMonth && taskDate.getFullYear() === selectedYear;
     }
     
     if (timeRange === "day") {
@@ -494,7 +518,7 @@ function EmployeesPage() {
           </div>
 
           {/* Time Range Selector Panel */}
-          <div className="rounded-2xl border border-border/60 bg-card p-4">
+          <div className="rounded-2xl border border-border/60 bg-card p-5 space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
               <div>
                 <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider block">
@@ -503,8 +527,8 @@ function EmployeesPage() {
                 <span className="text-sm font-semibold text-foreground mt-1 block">
                   {timeRange === "all" && "Todo o Período (Geral)"}
                   {timeRange === "today" && "Hoje"}
-                  {timeRange === "week" && "Esta Semana (Últimos 7 dias)"}
-                  {timeRange === "month" && "Este Mês (Últimos 30 dias)"}
+                  {timeRange === "week" && `Semana ${selectedWeek} de ${MONTHS_PT[selectedMonth]} de ${selectedYear}`}
+                  {timeRange === "month" && `Mês de ${MONTHS_PT[selectedMonth]} de ${selectedYear}`}
                   {timeRange === "day" && `Dia Selecionado no Calendário: ${selectedDate.toLocaleDateString("pt-BR")}`}
                 </span>
               </div>
@@ -532,7 +556,7 @@ function EmployeesPage() {
                   size="sm"
                   className="text-xs"
                 >
-                  Semana
+                  Semana Específica
                 </Button>
                 <Button
                   variant={timeRange === "month" ? "default" : "outline"}
@@ -540,10 +564,74 @@ function EmployeesPage() {
                   size="sm"
                   className="text-xs"
                 >
-                  Mês
+                  Mês Específico
                 </Button>
               </div>
             </div>
+
+            {/* Sub-selectors for specific Month or Week */}
+            {(timeRange === "month" || timeRange === "week") && (
+              <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-border/40">
+                {timeRange === "week" && (
+                  <div className="flex flex-col gap-1.5 min-w-[180px]">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground">Escolher Semana</span>
+                    <Select
+                      value={String(selectedWeek)}
+                      onValueChange={(val) => setSelectedWeek(Number(val))}
+                    >
+                      <SelectTrigger className="h-9 text-xs bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {WEEKS_PT.map((w) => (
+                          <SelectItem key={w.id} value={String(w.id)} className="text-xs">
+                            {w.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-1.5 min-w-[150px]">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Escolher Mês</span>
+                  <Select
+                    value={String(selectedMonth)}
+                    onValueChange={(val) => setSelectedMonth(Number(val))}
+                  >
+                    <SelectTrigger className="h-9 text-xs bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MONTHS_PT.map((m, idx) => (
+                        <SelectItem key={m} value={String(idx)} className="text-xs">
+                          {m}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex flex-col gap-1.5 min-w-[100px]">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Escolher Ano</span>
+                  <Select
+                    value={String(selectedYear)}
+                    onValueChange={(val) => setSelectedYear(Number(val))}
+                  >
+                    <SelectTrigger className="h-9 text-xs bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {YEARS.map((y) => (
+                        <SelectItem key={y} value={String(y)} className="text-xs">
+                          {y}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Productivity KPI Dashboard */}
