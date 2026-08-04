@@ -14,6 +14,7 @@ import {
   Clock3,
   CalendarDays,
   Hammer,
+  Printer,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { supabase } from "@/integrations/supabase/client";
@@ -476,7 +477,7 @@ function EmployeesPage() {
         // EMPLOYEE DETAIL / DASHBOARD VIEW
         <div className="space-y-6">
           {/* Back Header */}
-          <div className="flex items-center justify-between border-b border-border/50 pb-4">
+          <div className="flex items-center justify-between border-b border-border/50 pb-4 print:hidden">
             <Button
               variant="ghost"
               size="sm"
@@ -489,6 +490,14 @@ function EmployeesPage() {
             </Button>
             
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.print()}
+                className="gap-1.5 h-8 text-xs font-semibold"
+              >
+                <Printer className="h-3.5 w-3.5" /> Exportar PDF / Imprimir
+              </Button>
               <span className={cn(
                 "inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border",
                 selectedEmployee.role === "admin" && "bg-primary/10 text-primary border-primary/20",
@@ -500,6 +509,24 @@ function EmployeesPage() {
                 {selectedEmployee.role === "worker" && selectedEmployee.badge}
               </span>
             </div>
+          </div>
+
+          {/* Print-only Header */}
+          <div className="hidden print:block border-b-2 border-primary/50 pb-4 mb-6">
+            <h2 className="text-2xl font-bold font-display text-primary flex items-center gap-2">
+              📋 Relatório de Desempenho Operacional
+            </h2>
+            <p className="text-sm font-semibold text-foreground mt-1">
+              Funcionário: {selectedEmployee.name} ({selectedEmployee.role === "admin" ? "Administrador" : selectedEmployee.role === "supervisor" ? "Supervisor" : selectedEmployee.badge})
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Período: {timeRange === "all" && "Todo o Período (Geral)"}
+              {timeRange === "today" && "Hoje"}
+              {timeRange === "week" && `Semana ${selectedWeek} de ${MONTHS_PT[selectedMonth]} de ${selectedYear}`}
+              {timeRange === "month" && `Mês de ${MONTHS_PT[selectedMonth]} de ${selectedYear}`}
+              {timeRange === "day" && `Dia Selecionado: ${selectedDate.toLocaleDateString("pt-BR")}`}
+              {` · Gerado em ${new Date().toLocaleString("pt-BR")} · FitControl`}
+            </p>
           </div>
 
           {/* Profile Header Card */}
@@ -518,7 +545,7 @@ function EmployeesPage() {
           </div>
 
           {/* Time Range Selector Panel */}
-          <div className="rounded-2xl border border-border/60 bg-card p-5 space-y-4">
+          <div className="rounded-2xl border border-border/60 bg-card p-5 space-y-4 print:hidden">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between">
               <div>
                 <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider block">
@@ -899,9 +926,9 @@ function EmployeesPage() {
           )}
 
           {/* Interactive Calendar & Daily Activities Split Panel */}
-          <div className="grid gap-6 md:grid-cols-[auto_1fr]">
+          <div className="grid gap-6 md:grid-cols-[auto_1fr] print:grid-cols-1">
             {/* Calendar Widget */}
-            <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-card h-fit flex flex-col items-center">
+            <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-card h-fit flex flex-col items-center print:hidden">
               <h4 className="font-display font-bold text-sm mb-4 self-start flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4 text-primary" />
                 Navegar por Calendário
@@ -954,7 +981,7 @@ function EmployeesPage() {
                   <p className="text-xs text-muted-foreground/80 mt-0.5">Selecione outro período ou dia no calendário.</p>
                 </div>
               ) : (
-                <div className="divide-y divide-border/40 overflow-y-auto max-h-96 pr-1">
+                <div className="divide-y divide-border/40 overflow-y-auto max-h-96 pr-1 print:max-h-none print:overflow-visible">
                   {employeeStats?.periodTasks.map((t) => {
                     const st = STATUS.find((s) => s.id === t.status);
                     return (
