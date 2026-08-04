@@ -196,12 +196,18 @@ function ReportsPage() {
                 activeMs: 0,
                 pausedMs: 0,
                 pauseCount: 0,
+                urgentCompleted: 0,
               };
             }
 
             const record = employeeMap[assigneeId];
             record.total += 1;
-            if (t.status === "done") record.completed += 1;
+            if (t.status === "done") {
+              record.completed += 1;
+              if (t.priority === "Urgente" || t.priority === "Alta") {
+                record.urgentCompleted += 1;
+              }
+            }
             else if (t.status === "progress") record.progress += 1;
             else if (t.status === "paused") record.paused += 1;
             else if (t.status === "review") record.review += 1;
@@ -217,17 +223,23 @@ function ReportsPage() {
 
           const reportData = Object.values(employeeMap).map((emp: any) => {
             const pct = emp.total > 0 ? Math.round((emp.completed / emp.total) * 100) : 0;
+            const avgActiveMs = emp.completed > 0 ? Math.round(emp.activeMs / emp.completed) : 0;
             return {
               ...emp,
               completionRate: pct,
               activeHrsText: formatHrsMin(emp.activeMs),
               pausedHrsText: formatHrsMin(emp.pausedMs),
+              avgActiveHrsText: formatHrsMin(avgActiveMs),
+              activeHoursNum: Math.round((emp.activeMs / 3600000) * 10) / 10,
+              pausedHoursNum: Math.round((emp.pausedMs / 3600000) * 10) / 10,
             };
           }).sort((a, b) => b.completed - a.completed);
 
           // Summary KPI metrics
           const totalCompleted = filtered.filter((t) => t.status === "done").length;
           const totalActiveTime = filtered.reduce((acc, t) => acc + calculateTaskTimings(t).activeMs, 0);
+          const totalPauses = reportData.reduce((acc, emp) => acc + emp.pauseCount, 0);
+          const avgActiveTimePerTask = totalCompleted > 0 ? Math.round(totalActiveTime / totalCompleted) : 0;
           const topEmployee = reportData.length > 0 && reportData[0].id !== "unassigned" ? reportData[0].name : "Nenhum";
 
           setGeneratedReport({
@@ -240,6 +252,8 @@ function ReportsPage() {
               totalTasks: filtered.length,
               totalCompleted,
               totalActiveTimeText: formatHrsMin(totalActiveTime),
+              totalPauses,
+              avgActiveTimePerTaskText: formatHrsMin(avgActiveTimePerTask),
               topEmployee,
             },
           });
@@ -272,6 +286,41 @@ function ReportsPage() {
           const totalCompleted = filtered.filter((t) => t.status === "done").length;
           const totalReview = filtered.filter((t) => t.status === "review").length;
           const totalProgress = filtered.filter((t) => t.status === "progress").length;
+          const totalPaused = filtered.filter((t) => t.status === "paused").length;
+          const totalPending = filtered.filter((t) => t.status === "pending").length;
+
+          const completedTasks = filtered.filter((t) => t.status === "done");
+          const totalCompletedActiveMs = completedTasks.reduce((acc, t) => acc + calculateTaskTimings(t).activeMs, 0);
+          const totalCompletedPausedMs = completedTasks.reduce((acc, t) => acc + calculateTaskTimings(t).pausedMs, 0);
+          
+          const avgCompletedActiveText = completedTasks.length > 0 ? formatHrsMin(totalCompletedActiveMs / completedTasks.length) : "0m";
+          const avgCompletedPausedText = completedTasks.length > 0 ? formatHrsMin(totalCompletedPausedMs / completedTasks.length) : "0m";
+
+          // Timeline: Tasks created per day
+          const timelineMap: Record<string, number> = {};
+          filtered.forEach((t) => {
+            const dateStr = new Date(t.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+            timelineMap[dateStr] = (timelineMap[dateStr] || 0) + 1;
+          });
+          const tasksTimelineData = Object.entries(timelineMap).map(([date, count]) => ({
+            date,
+            "Tarefas Criadas": count,
+          })).sort((a, b) => {
+            const [da, ma] = a.date.split("/").map(Number);
+            const [db, mb] = b.date.split("/").map(Number);
+            return ma !== mb ? ma - mb : da - db;
+          });
+
+          // Tasks by priority chart data
+          const priorityCount: Record<string, number> = {};
+          filtered.forEach((t) => {
+            priorityCount[t.priority] = (priorityCount[t.priority] || 0) + 1;
+          });
+          const priorityChartData = ["Urgente", "Alta", "Normal", "Baixa"].map((p) => ({
+            name: p,
+            value: priorityCount[p] || 0,
+            color: p === "Urgente" ? "#ef4444" : p === "Alta" ? "#f97316" : p === "Normal" ? "#3b82f6" : "#64748b",
+          })).filter((p) => p.value > 0);
 
           setGeneratedReport({
             type: "tarefas",
@@ -284,6 +333,12 @@ function ReportsPage() {
               totalCompleted,
               totalReview,
               totalProgress,
+              totalPaused,
+              totalPending,
+              avgCompletedActiveText,
+              avgCompletedPausedText,
+              tasksTimelineData,
+              priorityChartData,
             },
           });
         } 
@@ -318,10 +373,12 @@ function ReportsPage() {
             ...m,
             assigneesCount: m.uniqueAssignees.size,
             activeHrsText: formatHrsMin(m.activeMs),
+            activeHrsNum: Math.round((m.activeMs / 3600000) * 10) / 10,
           })).sort((a, b) => b.total - a.total);
 
           const totalActiveTime = filtered.reduce((acc, t) => acc + calculateTaskTimings(t).activeMs, 0);
           const topMachine = reportData.length > 0 && reportData[0].id !== "none" ? reportData[0].code : "Nenhum";
+          const avgActiveTimePerService = filtered.length > 0 ? Math.round(totalActiveTime / filtered.length) : 0;
 
           setGeneratedReport({
             type: "maquinas",
@@ -334,6 +391,7 @@ function ReportsPage() {
               totalTasks: filtered.length,
               totalActiveTimeText: formatHrsMin(totalActiveTime),
               topMachine,
+              avgActiveTimePerServiceText: formatHrsMin(avgActiveTimePerService),
             },
           });
         } 
@@ -369,6 +427,28 @@ function ReportsPage() {
           const totalCompleted = statusCount.done || 0;
           const completionRate = filtered.length > 0 ? Math.round((totalCompleted / filtered.length) * 100) : 0;
 
+          const totalActiveTime = filtered.reduce((acc, t) => acc + calculateTaskTimings(t).activeMs, 0);
+          const totalPausedTime = filtered.reduce((acc, t) => acc + calculateTaskTimings(t).pausedMs, 0);
+          const totalPausesCount = filtered.reduce((acc, t) => acc + (Array.isArray(t.intervals) ? t.intervals.length : 0), 0);
+          const avgPausesPerTask = filtered.length > 0 ? Math.round((totalPausesCount / filtered.length) * 10) / 10 : 0;
+
+          // Daily completed timeline
+          const completedTimelineMap: Record<string, number> = {};
+          filtered.forEach((t) => {
+            if (t.status === "done" && t.completed_at) {
+              const dateStr = new Date(t.completed_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+              completedTimelineMap[dateStr] = (completedTimelineMap[dateStr] || 0) + 1;
+            }
+          });
+          const dailyCompletedTimeline = Object.entries(completedTimelineMap).map(([date, count]) => ({
+            date,
+            "Tarefas Concluídas": count,
+          })).sort((a, b) => {
+            const [da, ma] = a.date.split("/").map(Number);
+            const [db, mb] = b.date.split("/").map(Number);
+            return ma !== mb ? ma - mb : da - db;
+          });
+
           setGeneratedReport({
             type: "geral",
             generatedAt: new Date().toLocaleString("pt-BR"),
@@ -382,6 +462,10 @@ function ReportsPage() {
               totalTasks: filtered.length,
               totalCompleted,
               completionRate,
+              totalActiveTimeText: formatHrsMin(totalActiveTime),
+              totalPausedTimeText: formatHrsMin(totalPausedTime),
+              avgPausesPerTask,
+              dailyCompletedTimeline,
             },
           });
         }
@@ -497,6 +581,101 @@ function ReportsPage() {
       title="Relatórios Gerenciais"
       subtitle="Analise métricas da oficina, produtividade de funcionários e controle de máquinas."
     >
+      {/* Inject print-only stylesheet dynamically to prevent truncation and scaling issues */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          /* Hide sidebar, headers, query selectors and action buttons */
+          header, 
+          aside, 
+          .print\\:hidden, 
+          [role="dialog"], 
+          button, 
+          .toast {
+            display: none !important;
+          }
+          
+          /* Full A4 width and overflow corrections */
+          body, html, #root, main, .lg\\:pl-72 {
+            width: 100% !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            background: white !important;
+            color: black !important;
+          }
+
+          main {
+            padding: 1cm !important;
+          }
+
+          /* Force tables to extend to full screen width */
+          .overflow-x-auto, .overflow-y-auto {
+            overflow: visible !important;
+            max-height: none !important;
+            width: 100% !important;
+          }
+
+          table {
+            width: 100% !important;
+            page-break-inside: auto !important;
+            border-collapse: collapse !important;
+          }
+
+          tr {
+            page-break-inside: avoid !important;
+            page-break-after: auto !important;
+          }
+
+          /* Grid structures inside report cards */
+          .grid {
+            display: grid !important;
+            gap: 12px !important;
+          }
+
+          .grid-cols-4 {
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+          }
+
+          .grid-cols-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          /* Prevent cutoffs and visual truncation */
+          .print\\:break-inside-avoid, 
+          .rounded-2xl, 
+          .rounded-xl,
+          .border,
+          .bg-card {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
+          /* Recharts SVG print dimensions */
+          .recharts-responsive-container {
+            width: 100% !important;
+            height: 250px !important;
+            min-height: 250px !important;
+            display: block !important;
+          }
+
+          /* Lighten card styles */
+          .bg-card, .bg-card\\/60, .bg-surface-elevated, .bg-surface-elevated\\/40, .bg-accent\\/20, .bg-muted\\/30 {
+            background-color: transparent !important;
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: none !important;
+          }
+          
+          text, span, p, h1, h2, h3, h4, th, td {
+            color: #0f172a !important;
+          }
+
+          @page {
+            size: A4 portrait;
+            margin: 1.5cm;
+          }
+        }
+      `}} />
       {/* FILTERS CONTAINER: Hidden when printing */}
       <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-card space-y-6 print:hidden">
         <div className="flex items-center gap-2 pb-3 border-b border-border/40">
@@ -681,41 +860,68 @@ function ReportsPage() {
           {generatedReport.type === "desempenho" && (
             <div className="space-y-6">
               {/* Performance Cards Summary */}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 grid-cols-2 lg:grid-cols-6">
                 <div className="rounded-xl border border-border/40 bg-card/60 p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tarefas Registradas</div>
-                  <div className="text-2xl font-black text-foreground">{generatedReport.summary.totalTasks}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tarefas Totais</div>
+                  <div className="text-xl font-black text-foreground">{generatedReport.summary.totalTasks}</div>
                 </div>
                 <div className="rounded-xl border border-border/40 bg-card/60 p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tarefas Concluídas</div>
-                  <div className="text-2xl font-black text-success">{generatedReport.summary.totalCompleted}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Concluídas</div>
+                  <div className="text-xl font-black text-success">{generatedReport.summary.totalCompleted}</div>
                 </div>
                 <div className="rounded-xl border border-border/40 bg-card/60 p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Horas Ativas Totais</div>
-                  <div className="text-2xl font-black text-info">{generatedReport.summary.totalActiveTimeText}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tempo Ativo Total</div>
+                  <div className="text-xl font-black text-info">{generatedReport.summary.totalActiveTimeText}</div>
                 </div>
                 <div className="rounded-xl border border-border/40 bg-card/60 p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Destaque de Entregas</div>
-                  <div className="text-lg font-bold text-primary truncate leading-8">{generatedReport.summary.topEmployee}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Pausas Totais</div>
+                  <div className="text-xl font-black text-purple-400">{generatedReport.summary.totalPauses}</div>
+                </div>
+                <div className="rounded-xl border border-border/40 bg-card/60 p-4">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Média / Tarefa</div>
+                  <div className="text-xl font-black text-foreground">{generatedReport.summary.avgActiveTimePerTaskText}</div>
+                </div>
+                <div className="rounded-xl border border-border/40 bg-card/60 p-4">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Melhor Entregador</div>
+                  <div className="text-sm font-black text-primary truncate leading-6">{generatedReport.summary.topEmployee}</div>
                 </div>
               </div>
 
               {/* Chart section */}
               {generatedReport.data.length > 0 && (
-                <div className="rounded-2xl border border-border/50 bg-card p-6 print:break-inside-avoid">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Tarefas Concluídas por Funcionário</h3>
-                  <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={generatedReport.data.slice(0, 10)}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                        <XAxis dataKey="name" stroke="#888" fontSize={11} />
-                        <YAxis stroke="#888" fontSize={11} allowDecimals={false} />
-                        <Tooltip contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
-                        <Legend />
-                        <Bar name="Concluídas" dataKey="completed" fill="#10b981" radius={[4, 4, 0, 0]} />
-                        <Bar name="Outras" dataKey="total" fill="#4b5563" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="rounded-2xl border border-border/50 bg-card p-5 print:break-inside-avoid">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Volume de Tarefas por Funcionário</h3>
+                    <div className="h-64 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={generatedReport.data.slice(0, 10)}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                          <XAxis dataKey="name" stroke="#888" fontSize={9} />
+                          <YAxis stroke="#888" fontSize={10} allowDecimals={false} />
+                          <Tooltip contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
+                          <Legend />
+                          <Bar name="Concluídas" dataKey="completed" fill="#10b981" radius={[4, 4, 0, 0]} />
+                          <Bar name="Total Criadas" dataKey="total" fill="#4b5563" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-border/50 bg-card p-5 print:break-inside-avoid">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Tempo Trabalhado vs Pausado (Horas)</h3>
+                    <div className="h-64 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={generatedReport.data.slice(0, 10)}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                          <XAxis dataKey="name" stroke="#888" fontSize={9} />
+                          <YAxis stroke="#888" fontSize={10} />
+                          <Tooltip contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
+                          <Legend />
+                          <Bar name="Tempo Ativo (h)" dataKey="activeHoursNum" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                          <Bar name="Tempo Pausado (h)" dataKey="pausedHoursNum" fill="#a855f7" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </div>
               )}
@@ -733,10 +939,12 @@ function ReportsPage() {
                         <th className="p-3">Crachá</th>
                         <th className="p-3 text-center">Total</th>
                         <th className="p-3 text-center">Concluídas</th>
+                        <th className="p-3 text-center text-red-400">Urgentes Feitas</th>
                         <th className="p-3 text-center">Em Andamento</th>
                         <th className="p-3 text-center">Pausadas</th>
                         <th className="p-3 text-center">Taxa Conclusão</th>
                         <th className="p-3 text-right">Tempo Ativo</th>
+                        <th className="p-3 text-right">Média / Tarefa</th>
                         <th className="p-3 text-center">Qtd. Pausas</th>
                         <th className="p-3 text-right">Tempo Pausado</th>
                       </tr>
@@ -748,10 +956,12 @@ function ReportsPage() {
                           <td className="p-3 text-muted-foreground">{d.badge}</td>
                           <td className="p-3 text-center tabular-nums">{d.total}</td>
                           <td className="p-3 text-center tabular-nums text-success font-semibold">{d.completed}</td>
+                          <td className="p-3 text-center tabular-nums text-red-400 font-semibold">{d.urgentCompleted}</td>
                           <td className="p-3 text-center tabular-nums text-info">{d.progress}</td>
                           <td className="p-3 text-center tabular-nums text-purple-400">{d.paused}</td>
                           <td className="p-3 text-center font-bold text-foreground">{d.completionRate}%</td>
                           <td className="p-3 text-right tabular-nums text-foreground">{d.activeHrsText}</td>
+                          <td className="p-3 text-right tabular-nums text-foreground font-semibold">{d.avgActiveHrsText}</td>
                           <td className="p-3 text-center tabular-nums text-purple-400 font-semibold">{d.pauseCount}</td>
                           <td className="p-3 text-right tabular-nums text-muted-foreground">{d.pausedHrsText}</td>
                         </tr>
@@ -767,22 +977,76 @@ function ReportsPage() {
           {generatedReport.type === "tarefas" && (
             <div className="space-y-6">
               {/* Summary KPIs */}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 grid-cols-2 lg:grid-cols-6">
                 <div className="rounded-xl border border-border/40 bg-card/60 p-4">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Total Filtrado</div>
-                  <div className="text-2xl font-black text-foreground">{generatedReport.summary.totalTasks}</div>
+                  <div className="text-xl font-black text-foreground">{generatedReport.summary.totalTasks}</div>
                 </div>
                 <div className="rounded-xl border border-border/40 bg-card/60 p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Concluídas no Período</div>
-                  <div className="text-2xl font-black text-success">{generatedReport.summary.totalCompleted}</div>
-                </div>
-                <div className="rounded-xl border border-border/40 bg-card/60 p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Aguardando Revisão</div>
-                  <div className="text-2xl font-black text-warning">{generatedReport.summary.totalReview}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Concluídas</div>
+                  <div className="text-xl font-black text-success">{generatedReport.summary.totalCompleted}</div>
                 </div>
                 <div className="rounded-xl border border-border/40 bg-card/60 p-4">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Em Execução</div>
-                  <div className="text-2xl font-black text-info">{generatedReport.summary.totalProgress}</div>
+                  <div className="text-xl font-black text-info">{generatedReport.summary.totalProgress}</div>
+                </div>
+                <div className="rounded-xl border border-border/40 bg-card/60 p-4">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Pausadas</div>
+                  <div className="text-xl font-black text-warning">{generatedReport.summary.totalPaused}</div>
+                </div>
+                <div className="rounded-xl border border-border/40 bg-card/60 p-4">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Pendentes</div>
+                  <div className="text-xl font-black text-muted-foreground">{generatedReport.summary.totalPending}</div>
+                </div>
+                <div className="rounded-xl border border-border/40 bg-card/60 p-4">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tempo Médio / Tarefa</div>
+                  <div className="text-sm font-black text-foreground mt-1 truncate leading-6">{generatedReport.summary.avgCompletedActiveText}</div>
+                </div>
+              </div>
+
+              {/* Charts section */}
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="rounded-2xl border border-border/50 bg-card p-5 print:break-inside-avoid">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Abertura de Tarefas no Período</h3>
+                  <div className="h-60 w-full">
+                    {generatedReport.summary.tasksTimelineData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={generatedReport.summary.tasksTimelineData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                          <XAxis dataKey="date" stroke="#888" fontSize={9} />
+                          <YAxis stroke="#888" fontSize={10} allowDecimals={false} />
+                          <Tooltip contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
+                          <Legend />
+                          <Line type="monotone" dataKey="Tarefas Criadas" stroke="#f97316" strokeWidth={2} activeDot={{ r: 6 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="text-center py-16 text-muted-foreground text-xs">Sem dados suficientes.</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-border/50 bg-card p-5 print:break-inside-avoid">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Divisão por Nível de Urgência</h3>
+                  <div className="h-60 w-full">
+                    {generatedReport.summary.priorityChartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={generatedReport.summary.priorityChartData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                          <XAxis dataKey="name" stroke="#888" fontSize={9} />
+                          <YAxis stroke="#888" fontSize={10} allowDecimals={false} />
+                          <Tooltip contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
+                          <Bar dataKey="value" name="Volume" radius={[4, 4, 0, 0]}>
+                            {generatedReport.summary.priorityChartData.map((entry: any, index: number) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="text-center py-16 text-muted-foreground text-xs">Sem dados suficientes.</div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -844,24 +1108,65 @@ function ReportsPage() {
           {generatedReport.type === "maquinas" && (
             <div className="space-y-6">
               {/* Summary KPIs */}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
                 <div className="rounded-xl border border-border/40 bg-card/60 p-4">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Máquinas Acionadas</div>
-                  <div className="text-2xl font-black text-foreground">{generatedReport.summary.totalMachines}</div>
+                  <div className="text-xl font-black text-foreground">{generatedReport.summary.totalMachines}</div>
                 </div>
                 <div className="rounded-xl border border-border/40 bg-card/60 p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Serviços Totais em Máquinas</div>
-                  <div className="text-2xl font-black text-primary">{generatedReport.summary.totalTasks}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Serviços Totais</div>
+                  <div className="text-xl font-black text-primary">{generatedReport.summary.totalTasks}</div>
                 </div>
                 <div className="rounded-xl border border-border/40 bg-card/60 p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tempo Total de Montagem/Manutenção</div>
-                  <div className="text-2xl font-black text-info">{generatedReport.summary.totalActiveTimeText}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tempo de Trabalho</div>
+                  <div className="text-xl font-black text-info">{generatedReport.summary.totalActiveTimeText}</div>
                 </div>
                 <div className="rounded-xl border border-border/40 bg-card/60 p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Máquina Mais Acionada</div>
-                  <div className="text-lg font-bold text-foreground truncate leading-8">{generatedReport.summary.topMachine}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Média / Serviço</div>
+                  <div className="text-xl font-black text-foreground">{generatedReport.summary.avgActiveTimePerServiceText}</div>
+                </div>
+                <div className="rounded-xl border border-border/40 bg-card/60 p-4">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Máquina Destaque</div>
+                  <div className="text-sm font-black text-foreground truncate leading-6 text-primary">{generatedReport.summary.topMachine}</div>
                 </div>
               </div>
+
+              {/* Charts Section */}
+              {generatedReport.data.length > 0 && (
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="rounded-2xl border border-border/50 bg-card p-5 print:break-inside-avoid">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Tempo Ativo por Equipamento (Horas)</h3>
+                    <div className="h-64 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={generatedReport.data.slice(0, 10)} layout="vertical" margin={{ left: 15, right: 10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                          <XAxis type="number" stroke="#888" fontSize={9} />
+                          <YAxis dataKey="code" type="category" stroke="#888" fontSize={10} width={60} />
+                          <Tooltip formatter={(val) => [`${val} horas`, "Uso Ativo"]} contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
+                          <Bar name="Horas Trabalhadas" dataKey="activeHrsNum" fill="#0ea5e9" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-border/50 bg-card p-5 print:break-inside-avoid">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Volume de Serviços por Equipamento</h3>
+                    <div className="h-64 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={generatedReport.data.slice(0, 10)}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                          <XAxis dataKey="code" stroke="#888" fontSize={9} />
+                          <YAxis stroke="#888" fontSize={10} allowDecimals={false} />
+                          <Tooltip contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
+                          <Legend />
+                          <Bar name="Concluídos" dataKey="completed" fill="#10b981" radius={[4, 4, 0, 0]} />
+                          <Bar name="Total" dataKey="total" fill="#4b5563" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Machine list table */}
               <div className="rounded-2xl border border-border/60 bg-card shadow-card overflow-hidden">
@@ -902,18 +1207,30 @@ function ReportsPage() {
           {generatedReport.type === "geral" && (
             <div className="space-y-6">
               {/* Summary KPIs */}
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 grid-cols-2 lg:grid-cols-6">
                 <div className="rounded-xl border border-border/40 bg-card/60 p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Volume Total no Período</div>
-                  <div className="text-2xl font-black text-foreground">{generatedReport.summary.totalTasks} tarefas</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Volume Total</div>
+                  <div className="text-xl font-black text-foreground">{generatedReport.summary.totalTasks} tarefas</div>
                 </div>
                 <div className="rounded-xl border border-border/40 bg-card/60 p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Entregas Concluídas</div>
-                  <div className="text-2xl font-black text-success">{generatedReport.summary.totalCompleted} concluídas</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Concluídas</div>
+                  <div className="text-xl font-black text-success">{generatedReport.summary.totalCompleted}</div>
                 </div>
                 <div className="rounded-xl border border-border/40 bg-card/60 p-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Taxa de Resolução</div>
-                  <div className="text-2xl font-black text-info">{generatedReport.summary.completionRate}%</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Resolução</div>
+                  <div className="text-xl font-black text-info">{generatedReport.summary.completionRate}%</div>
+                </div>
+                <div className="rounded-xl border border-border/40 bg-card/60 p-4">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tempo Ativo</div>
+                  <div className="text-xl font-black text-foreground">{generatedReport.summary.totalActiveTimeText}</div>
+                </div>
+                <div className="rounded-xl border border-border/40 bg-card/60 p-4">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tempo Pausado</div>
+                  <div className="text-xl font-black text-purple-400">{generatedReport.summary.totalPausedTimeText}</div>
+                </div>
+                <div className="rounded-xl border border-border/40 bg-card/60 p-4">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Pausas / Tarefa</div>
+                  <div className="text-xl font-black text-foreground">{generatedReport.summary.avgPausesPerTask}</div>
                 </div>
               </div>
 
@@ -929,7 +1246,7 @@ function ReportsPage() {
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={generatedReport.summary.categoryChart}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                          <XAxis dataKey="name" stroke="#888" fontSize={10} />
+                          <XAxis dataKey="name" stroke="#888" fontSize={9} />
                           <YAxis stroke="#888" fontSize={10} allowDecimals={false} />
                           <Tooltip contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
                           <Bar dataKey="value" name="Volume" fill="#f97316" radius={[4, 4, 0, 0]} />
@@ -982,6 +1299,27 @@ function ReportsPage() {
                     <div className="text-center py-16 text-muted-foreground text-xs">Sem dados no período.</div>
                   )}
                 </div>
+
+                {/* Timeline Chart */}
+                {generatedReport.summary.dailyCompletedTimeline.length > 0 && (
+                  <div className="col-span-full rounded-2xl border border-border/50 bg-card p-5 print:break-inside-avoid">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+                      <TrendingUp className="h-4 w-4 text-success" /> Evolução de Conclusão de Tarefas (Diária)
+                    </h3>
+                    <div className="h-60 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={generatedReport.summary.dailyCompletedTimeline}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                          <XAxis dataKey="date" stroke="#888" fontSize={9} />
+                          <YAxis stroke="#888" fontSize={10} allowDecimals={false} />
+                          <Tooltip contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
+                          <Legend />
+                          <Line type="monotone" dataKey="Tarefas Concluídas" stroke="#10b981" strokeWidth={2} activeDot={{ r: 6 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
