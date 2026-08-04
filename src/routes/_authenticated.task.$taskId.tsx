@@ -13,6 +13,7 @@ import {
   formatPhotoUrls,
   type Status,
   type TaskInterval,
+  calculateTaskTimings,
 } from "@/lib/task-utils";
 import {
   Play,
@@ -41,6 +42,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { FormattedText, RichTextEditor } from "@/components/rich-text-editor";
 import {
   Dialog,
   DialogContent,
@@ -432,31 +434,10 @@ function TaskDashboardPage() {
 
   // Calculations for Metrics and Graphs
   const stats = useMemo(() => {
-    if (!task || !task.started_at) {
+    if (!task) {
       return { activeMs: 0, pausedMs: 0, activePct: 0, pausedPct: 0, totalMs: 0 };
     }
-
-    const endPoint = task.completed_at ? new Date(task.completed_at).getTime() : now;
-    const totalMs = endPoint - new Date(task.started_at).getTime();
-
-    let pausedMs = 0;
-    if (Array.isArray(task.intervals)) {
-      task.intervals.forEach((interval) => {
-        const start = new Date(interval.paused_at).getTime();
-        const end = interval.resumed_at
-          ? new Date(interval.resumed_at).getTime()
-          : (task.status === "paused" ? now : start);
-        const duration = end - start;
-        if (duration > 0) pausedMs += duration;
-      });
-    }
-
-    const activeMs = Math.max(0, totalMs - pausedMs);
-
-    const activePct = totalMs > 0 ? Math.round((activeMs / totalMs) * 100) : 0;
-    const pausedPct = totalMs > 0 ? Math.round((pausedMs / totalMs) * 100) : 0;
-
-    return { activeMs, pausedMs, activePct, pausedPct, totalMs };
+    return calculateTaskTimings(task as any, now);
   }, [task, now]);
 
   // Chart data
@@ -857,8 +838,12 @@ function TaskDashboardPage() {
             <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <FileText className="h-4 w-4 text-primary" /> Descrição da Tarefa
             </h3>
-            <div className="text-sm text-foreground bg-surface-elevated/40 border border-border/40 p-4 rounded-xl whitespace-pre-wrap leading-relaxed">
-              {task.description || <span className="text-muted-foreground italic">Nenhuma descrição fornecida.</span>}
+            <div className="text-sm text-foreground bg-surface-elevated/40 border border-border/40 p-4 rounded-xl leading-relaxed">
+              {task.description ? (
+                <FormattedText text={task.description} />
+              ) : (
+                <span className="text-muted-foreground italic">Nenhuma descrição fornecida.</span>
+              )}
             </div>
           </div>
 
@@ -877,12 +862,11 @@ function TaskDashboardPage() {
 
             {notesEditing ? (
               <div className="space-y-3">
-                <Textarea
+                <RichTextEditor
                   value={newNotes}
-                  onChange={(e) => setNewNotes(e.target.value)}
+                  onChange={setNewNotes}
                   placeholder="Insira notas operacionais, ajustes, problemas enfrentados ou peças gastas..."
                   rows={4}
-                  className="text-xs bg-background"
                 />
                 <div className="flex items-center gap-2 justify-end">
                   <Button size="sm" variant="ghost" onClick={() => {
@@ -902,8 +886,12 @@ function TaskDashboardPage() {
                 </div>
               </div>
             ) : (
-              <div className="text-xs text-foreground bg-surface-elevated/40 border border-border/40 p-4 rounded-xl whitespace-pre-wrap leading-relaxed min-h-[5rem]">
-                {task.notes || <span className="text-muted-foreground italic text-[11px]">Nenhuma observação operacional registrada.</span>}
+              <div className="text-xs text-foreground bg-surface-elevated/40 border border-border/40 p-4 rounded-xl leading-relaxed min-h-[5rem]">
+                {task.notes ? (
+                  <FormattedText text={task.notes} />
+                ) : (
+                  <span className="text-muted-foreground italic text-[11px]">Nenhuma observação operacional registrada.</span>
+                )}
               </div>
             )}
           </div>

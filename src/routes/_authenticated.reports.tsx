@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { AppShell } from "@/components/app-shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { STATUS, TASK_TYPES, typeIcon, priorityTone, parsePhotoUrls } from "@/lib/task-utils";
+import { STATUS, TASK_TYPES, typeIcon, priorityTone, parsePhotoUrls, calculateTaskTimings as calculateGlobalTaskTimings } from "@/lib/task-utils";
 import {
   BarChart3,
   Calendar,
@@ -131,23 +131,7 @@ function ReportsPage() {
 
   // Duration parser helper
   const calculateTaskTimings = (task: any) => {
-    if (!task.started_at) return { activeMs: 0, pausedMs: 0, totalMs: 0 };
-    const end = task.completed_at ? new Date(task.completed_at).getTime() : Date.now();
-    const totalMs = end - new Date(task.started_at).getTime();
-
-    let pausedMs = 0;
-    const intervals = Array.isArray(task.intervals) ? task.intervals : [];
-    intervals.forEach((interval: any) => {
-      const startPause = new Date(interval.paused_at).getTime();
-      const endPause = interval.resumed_at
-        ? new Date(interval.resumed_at).getTime()
-        : (task.status === "paused" ? Date.now() : startPause);
-      const duration = endPause - startPause;
-      if (duration > 0) pausedMs += duration;
-    });
-
-    const activeMs = Math.max(0, totalMs - pausedMs);
-    return { activeMs, pausedMs, totalMs };
+    return calculateGlobalTaskTimings(task, Date.now());
   };
 
   const formatHrsMin = (ms: number) => {

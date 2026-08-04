@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -392,7 +393,7 @@ function MyTasks() {
               </div>
               <div className="space-y-2">
                 <Label>Descrição</Label>
-                <Textarea name="description" rows={3} placeholder="Detalhes da tarefa..." />
+                <RichTextEditor name="description" placeholder="Detalhes da tarefa..." rows={3} />
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>

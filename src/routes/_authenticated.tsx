@@ -4,6 +4,9 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { checkNeedsAutoPause } from "@/lib/task-utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -12,10 +15,61 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   const { session, loading, isSupervisor } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
   }, [loading, session, navigate]);
+
+  // Auto-pause tasks after 18:00
+  useEffect(() => {
+    if (!session?.user) return;
+
+    const runAutoPauseCheck = async () => {
+      try {
+        const { data: activeTasks } = await supabase
+          .from("tasks")
+          .select("id, title, started_at, created_at, status, intervals")
+          .eq("status", "progress");
+
+        if (activeTasks) {
+          for (const t of activeTasks) {
+            const parsedIntervals = Array.isArray(t.intervals) ? t.intervals : [];
+            const taskWithIntervals = { ...t, intervals: parsedIntervals } as any;
+
+            const check = checkNeedsAutoPause(taskWithIntervals);
+            if (check.needsPause && check.newIntervals) {
+              const { error } = await supabase
+                .from("tasks")
+                .update({
+                  status: "paused",
+                  intervals: check.newIntervals as any
+                } as never)
+                .eq("id", t.id);
+
+              if (!error) {
+                qc.invalidateQueries({ queryKey: ["tasks"] });
+                qc.invalidateQueries({ queryKey: ["my-tasks"] });
+                qc.invalidateQueries({ queryKey: ["task", t.id] });
+                toast.info(`Tarefa "${t.title}" pausada automaticamente às 18:00 (Fim do Expediente)`);
+              } else {
+                console.error("Error auto-pausing task:", error);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Auto-pause check error:", err);
+      }
+    };
+
+    // Run immediately on load
+    runAutoPauseCheck();
+
+    // Check periodically every 60 seconds
+    const checkInterval = setInterval(runAutoPauseCheck, 60 * 1000);
+    return () => clearInterval(checkInterval);
+  }, [session, qc]);
 
   // Request permissions, create channel and subscribe to Realtime new tasks
   useEffect(() => {

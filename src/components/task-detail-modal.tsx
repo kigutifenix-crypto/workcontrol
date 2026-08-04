@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { FormattedText, RichTextEditor } from "@/components/rich-text-editor";
 import {
   Dialog,
   DialogContent,
@@ -634,11 +635,11 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
 
               <div className="space-y-2">
                 <Label className="font-semibold">Descrição</Label>
-                <Textarea
-                  rows={3}
+                <RichTextEditor
                   value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
+                  onChange={setEditDescription}
                   placeholder="Detalhes completos da tarefa..."
+                  rows={4}
                 />
               </div>
 
@@ -730,8 +731,12 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
                 <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-2">
                   <FileText className="h-3.5 w-3.5 text-primary" /> Descrição da Tarefa
                 </h4>
-                <div className="rounded-xl border border-border/50 bg-surface-elevated p-4 text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-                  {task.description || <span className="text-muted-foreground italic">Nenhuma descrição informada.</span>}
+                <div className="rounded-xl border border-border/50 bg-surface-elevated p-4 text-sm text-foreground leading-relaxed">
+                  {task.description ? (
+                    <FormattedText text={task.description} />
+                  ) : (
+                    <span className="text-muted-foreground italic">Nenhuma descrição informada.</span>
+                  )}
                 </div>
               </div>
 
@@ -755,11 +760,11 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
 
                 {editingNotes ? (
                   <div className="space-y-2">
-                    <Textarea
-                      rows={3}
+                    <RichTextEditor
                       value={newNotes}
-                      onChange={(e) => setNewNotes(e.target.value)}
+                      onChange={setNewNotes}
                       placeholder="Adicione anotações sobre peças, ajustes, andamento..."
+                      rows={3}
                     />
                     <div className="flex items-center justify-end gap-2">
                       <Button size="sm" variant="ghost" onClick={() => setEditingNotes(false)}>
@@ -776,8 +781,12 @@ export function TaskDetailModal({ task, open, onOpenChange, onTaskUpdated }: Tas
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-border/50 bg-surface-elevated p-4 text-sm text-foreground whitespace-pre-wrap">
-                    {task.notes || <span className="text-muted-foreground italic">Sem observações operacionais registradas.</span>}
+                  <div className="rounded-xl border border-border/50 bg-surface-elevated p-4 text-sm text-foreground">
+                    {task.notes ? (
+                      <FormattedText text={task.notes} />
+                    ) : (
+                      <span className="text-muted-foreground italic">Sem observações operacionais registradas.</span>
+                    )}
                   </div>
                 )}
               </div>

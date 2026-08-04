@@ -37,6 +37,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import {
   Select,
   SelectContent,
@@ -328,7 +329,7 @@ function AllTasksPage() {
 
               <div className="space-y-2">
                 <Label>Descrição</Label>
-                <Textarea name="description" rows={3} placeholder="Detalhes da tarefa..." />
+                <RichTextEditor name="description" placeholder="Detalhes da tarefa..." rows={3} />
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
