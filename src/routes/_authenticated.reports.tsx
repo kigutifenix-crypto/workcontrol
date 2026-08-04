@@ -609,13 +609,19 @@ function ReportsPage() {
             padding: 1cm !important;
           }
 
-          /* Force tables to extend to full screen width */
-          .overflow-x-auto, .overflow-y-auto {
+          /* Force tables to extend to full screen width and disable overflow scrollbars */
+          .overflow-x-auto, 
+          .overflow-y-auto, 
+          .overflow-hidden,
+          .shadow-card,
+          .rounded-2xl {
             overflow: visible !important;
             max-height: none !important;
             width: 100% !important;
+            box-shadow: none !important;
           }
 
+          /* Allow tables to break across pages naturally */
           table {
             width: 100% !important;
             page-break-inside: auto !important;
@@ -625,6 +631,23 @@ function ReportsPage() {
           tr {
             page-break-inside: avoid !important;
             page-break-after: auto !important;
+          }
+
+          thead {
+            display: table-header-group !important; /* Print table headers on every page */
+          }
+
+          /* Adjust table cell fonts to fit horizontally on A4 portrait */
+          table, th, td {
+            font-size: 8px !important;
+            padding: 4px 6px !important;
+          }
+
+          /* Allow long titles to wrap instead of truncating */
+          .max-w-xs.truncate {
+            max-width: none !important;
+            white-space: normal !important;
+            overflow: visible !important;
           }
 
           /* Grid structures inside report cards */
@@ -641,12 +664,10 @@ function ReportsPage() {
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
 
-          /* Prevent cutoffs and visual truncation */
+          /* Prevent charts and KPI blocks from breaking halfway */
           .print\\:break-inside-avoid, 
-          .rounded-2xl, 
-          .rounded-xl,
-          .border,
-          .bg-card {
+          .recharts-responsive-container,
+          .grid > div {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
@@ -654,8 +675,8 @@ function ReportsPage() {
           /* Recharts SVG print dimensions */
           .recharts-responsive-container {
             width: 100% !important;
-            height: 250px !important;
-            min-height: 250px !important;
+            height: 220px !important;
+            min-height: 220px !important;
             display: block !important;
           }
 
@@ -672,7 +693,7 @@ function ReportsPage() {
 
           @page {
             size: A4 portrait;
-            margin: 1.5cm;
+            margin: 1cm;
           }
         }
       `}} />
