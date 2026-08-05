@@ -592,13 +592,14 @@ function ReportsPage() {
       {/* Inject print-only stylesheet dynamically to prevent truncation and scaling issues */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          /* Hide sidebar, headers, query selectors and action buttons */
+          /* Hide sidebar, headers, query selectors, action buttons and toaster popups */
           header, 
           aside, 
           .print\\:hidden, 
           [role="dialog"], 
           button, 
-          .toast {
+          .toast,
+          [data-sonner-toaster] {
             display: none !important;
           }
           
@@ -702,12 +703,15 @@ function ReportsPage() {
             break-inside: avoid !important;
           }
 
-          /* Recharts SVG print dimensions */
+          /* Recharts SVG print dimensions and container heights */
           .recharts-responsive-container {
             width: 100% !important;
             height: 170px !important;
             min-height: 170px !important;
             display: block !important;
+          }
+          .h-64, .h-60 {
+            height: 170px !important;
           }
 
           /* Lighten card styles */
@@ -1065,7 +1069,7 @@ function ReportsPage() {
             </div>
 
             {/* DESTAQUE PRINCIPAL: Detail Table on top */}
-            <div className="rounded-2xl border border-border/60 bg-card shadow-card overflow-hidden">
+            <div className="rounded-2xl border border-border/60 bg-card shadow-card overflow-hidden print:border-0 print:bg-transparent print:rounded-none print:shadow-none print:overflow-visible">
               <div className="p-4 bg-surface-elevated/40 border-b border-border/40 flex items-center justify-between">
                 <h3 className="font-semibold text-sm text-foreground">Lista de Atividades no Período</h3>
                 <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded uppercase">Principal</span>
@@ -1264,7 +1268,7 @@ function ReportsPage() {
             )}
 
             {/* Performance Table */}
-            <div className="rounded-2xl border border-border/60 bg-card shadow-card overflow-hidden">
+            <div className="rounded-2xl border border-border/60 bg-card shadow-card overflow-hidden print:border-0 print:bg-transparent print:rounded-none print:shadow-none print:overflow-visible">
               <div className="p-4 bg-surface-elevated/40 border-b border-border/40">
                 <h3 className="font-semibold text-sm">Quadro de Produtividade dos Colaboradores</h3>
               </div>
@@ -1391,7 +1395,7 @@ function ReportsPage() {
             )}
 
             {/* Machine list table */}
-            <div className="rounded-2xl border border-border/60 bg-card shadow-card overflow-hidden">
+            <div className="rounded-2xl border border-border/60 bg-card shadow-card overflow-hidden print:border-0 print:bg-transparent print:rounded-none print:shadow-none print:overflow-visible">
               <div className="p-4 bg-surface-elevated/40 border-b border-border/40">
                 <h3 className="font-semibold text-sm">Tempo e Volume de Trabalho em Equipamentos</h3>
               </div>
