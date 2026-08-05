@@ -1,4 +1,4 @@
-export const TASK_TYPES = ["Montagem", "Pintura", "Limpeza", "Manutenção", "Embalagem", "Sistema"] as const;
+export const TASK_TYPES = ["Montagem", "Pintura", "Limpeza", "Manutenção", "Embalagem", "Cadastro"] as const;
 export type TaskType = (typeof TASK_TYPES)[number];
 
 export const STATUS = [
@@ -35,7 +35,7 @@ export function typeIcon(t: string): string {
     case "Limpeza": return "🧽";
     case "Manutenção": return "🛠️";
     case "Embalagem": return "📦";
-    case "Sistema": return "💻";
+    case "Cadastro": return "📝";
     default: return "⚙️";
   }
 }
