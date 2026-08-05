@@ -295,10 +295,15 @@ function EmployeesPage() {
         avgTimeMap[t.type].count += 1;
       }
     });
-    const avgTimeChartData = Object.entries(avgTimeMap).map(([name, data]) => ({
-      name,
-      minutes: Math.round(data.sum / data.count),
-    }));
+    const avgTimeChartData = Object.entries(avgTimeMap).map(([name, data]) => {
+      const avgMinutes = data.sum / data.count;
+      const avgHours = parseFloat((avgMinutes / 60).toFixed(1));
+      return {
+        name,
+        hours: avgHours,
+        minutes: Math.round(avgMinutes),
+      };
+    });
 
     return {
       periodTasks,
@@ -860,14 +865,14 @@ function EmployeesPage() {
                         <XAxis type="number" fontSize={10} stroke="#64748b" />
                         <YAxis dataKey="name" type="category" width={100} fontSize={10} stroke="#64748b" />
                         <Tooltip
-                          formatter={(value) => [`${value} minutos`, "Tempo Médio"]}
+                          formatter={(value) => [`${value} horas`, "Tempo Médio"]}
                           contentStyle={{
                             backgroundColor: "hsl(var(--card))",
                             borderColor: "hsl(var(--border))",
                             borderRadius: "12px",
                           }}
                         />
-                        <Bar dataKey="minutes" radius={[0, 4, 4, 0]}>
+                        <Bar dataKey="hours" radius={[0, 4, 4, 0]}>
                           {employeeStats.avgTimeChartData.map((_entry, idx) => (
                             <Cell key={`cell-${idx}`} fill="#0ea5e9" />
                           ))}

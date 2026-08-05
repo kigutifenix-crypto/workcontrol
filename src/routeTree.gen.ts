@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAllTasksRouteImport } from './routes/_authenticated.all-tasks'
+import { Route as AuthenticatedComparisonRouteImport } from './routes/_authenticated.comparison'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedEmployeesRouteImport } from './routes/_authenticated.employees'
 import { Route as AuthenticatedMachinesRouteImport } from './routes/_authenticated.machines'
@@ -39,6 +40,11 @@ const AuthRoute = AuthRouteImport.update({
 const AuthenticatedAllTasksRoute = AuthenticatedAllTasksRouteImport.update({
   id: '/all-tasks',
   path: '/all-tasks',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedComparisonRoute = AuthenticatedComparisonRouteImport.update({
+  id: '/comparison',
+  path: '/comparison',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/all-tasks': typeof AuthenticatedAllTasksRoute
+  '/comparison': typeof AuthenticatedComparisonRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/employees': typeof AuthenticatedEmployeesRoute
   '/machines': typeof AuthenticatedMachinesRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/all-tasks': typeof AuthenticatedAllTasksRoute
+  '/comparison': typeof AuthenticatedComparisonRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/employees': typeof AuthenticatedEmployeesRoute
   '/machines': typeof AuthenticatedMachinesRoute
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/all-tasks': typeof AuthenticatedAllTasksRoute
+  '/_authenticated/comparison': typeof AuthenticatedComparisonRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/employees': typeof AuthenticatedEmployeesRoute
   '/_authenticated/machines': typeof AuthenticatedMachinesRoute
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/all-tasks'
+    | '/comparison'
     | '/dashboard'
     | '/employees'
     | '/machines'
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/all-tasks'
+    | '/comparison'
     | '/dashboard'
     | '/employees'
     | '/machines'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/all-tasks'
+    | '/_authenticated/comparison'
     | '/_authenticated/dashboard'
     | '/_authenticated/employees'
     | '/_authenticated/machines'
@@ -200,6 +212,13 @@ declare module '@tanstack/react-router' {
       path: '/all-tasks'
       fullPath: '/all-tasks'
       preLoaderRoute: typeof AuthenticatedAllTasksRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/comparison': {
+      id: '/_authenticated/comparison'
+      path: '/comparison'
+      fullPath: '/comparison'
+      preLoaderRoute: typeof AuthenticatedComparisonRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -263,6 +282,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAllTasksRoute: typeof AuthenticatedAllTasksRoute
+  AuthenticatedComparisonRoute: typeof AuthenticatedComparisonRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmployeesRoute: typeof AuthenticatedEmployeesRoute
   AuthenticatedMachinesRoute: typeof AuthenticatedMachinesRoute
@@ -275,6 +295,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAllTasksRoute: AuthenticatedAllTasksRoute,
+  AuthenticatedComparisonRoute: AuthenticatedComparisonRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmployeesRoute: AuthenticatedEmployeesRoute,
   AuthenticatedMachinesRoute: AuthenticatedMachinesRoute,
