@@ -38,6 +38,7 @@ import {
   Cell,
   LineChart,
   Line,
+  LabelList,
 } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/comparison")({
@@ -643,8 +644,12 @@ function ComparisonPage() {
                         <YAxis stroke="#888" fontSize={10} allowDecimals={false} />
                         <Tooltip contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
                         <Legend />
-                        <Bar name={temporalStats.labels.p1} dataKey="Período 1" fill="#f97316" radius={[4, 4, 0, 0]} />
-                        <Bar name={temporalStats.labels.p2} dataKey="Período 2" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                        <Bar name={temporalStats.labels.p1} dataKey="Período 1" fill="#f97316" radius={[4, 4, 0, 0]}>
+                          <LabelList dataKey="Período 1" position="top" style={{ fill: '#a1a1aa', fontSize: 9, fontWeight: 'bold' }} />
+                        </Bar>
+                        <Bar name={temporalStats.labels.p2} dataKey="Período 2" fill="#0ea5e9" radius={[4, 4, 0, 0]}>
+                          <LabelList dataKey="Período 2" position="top" style={{ fill: '#a1a1aa', fontSize: 9, fontWeight: 'bold' }} />
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -813,8 +818,12 @@ function ComparisonPage() {
                       <YAxis stroke="#888" fontSize={10} />
                       <Tooltip contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
                       <Legend />
-                      <Bar name={colabStats.a.name} dataKey={colabStats.a.name} fill="#f97316" radius={[4, 4, 0, 0]} />
-                      <Bar name={colabStats.b.name} dataKey={colabStats.b.name} fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                      <Bar name={colabStats.a.name} dataKey={colabStats.a.name} fill="#f97316" radius={[4, 4, 0, 0]}>
+                        <LabelList dataKey={colabStats.a.name} position="top" style={{ fill: '#a1a1aa', fontSize: 9, fontWeight: 'bold' }} />
+                      </Bar>
+                      <Bar name={colabStats.b.name} dataKey={colabStats.b.name} fill="#0ea5e9" radius={[4, 4, 0, 0]}>
+                        <LabelList dataKey={colabStats.b.name} position="top" style={{ fill: '#a1a1aa', fontSize: 9, fontWeight: 'bold' }} />
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

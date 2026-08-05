@@ -44,6 +44,7 @@ import {
   Cell,
   LineChart,
   Line,
+  LabelList,
 } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/reports")({
@@ -961,7 +962,9 @@ function ReportsPage() {
                         <XAxis dataKey="name" stroke="#888" fontSize={9} />
                         <YAxis stroke="#888" fontSize={10} allowDecimals={false} />
                         <Tooltip contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
-                        <Bar dataKey="value" name="Volume" fill="#f97316" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="value" name="Volume" fill="#f97316" radius={[4, 4, 0, 0]}>
+                          <LabelList dataKey="value" position="top" style={{ fill: '#a1a1aa', fontSize: 10, fontWeight: 'bold' }} />
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1244,8 +1247,12 @@ function ReportsPage() {
                         <YAxis stroke="#888" fontSize={10} allowDecimals={false} />
                         <Tooltip contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
                         <Legend />
-                        <Bar name="Concluídas" dataKey="completed" fill="#10b981" radius={[4, 4, 0, 0]} />
-                        <Bar name="Total Criadas" dataKey="total" fill="#4b5563" radius={[4, 4, 0, 0]} />
+                        <Bar name="Concluídas" dataKey="completed" fill="#10b981" radius={[4, 4, 0, 0]}>
+                          <LabelList dataKey="completed" position="top" style={{ fill: '#a1a1aa', fontSize: 9, fontWeight: 'bold' }} />
+                        </Bar>
+                        <Bar name="Total Criadas" dataKey="total" fill="#4b5563" radius={[4, 4, 0, 0]}>
+                          <LabelList dataKey="total" position="top" style={{ fill: '#a1a1aa', fontSize: 9, fontWeight: 'bold' }} />
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1261,8 +1268,12 @@ function ReportsPage() {
                         <YAxis stroke="#888" fontSize={10} />
                         <Tooltip contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
                         <Legend />
-                        <Bar name="Tempo Ativo (h)" dataKey="activeHoursNum" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
-                        <Bar name="Tempo Pausado (h)" dataKey="pausedHoursNum" fill="#a855f7" radius={[4, 4, 0, 0]} />
+                        <Bar name="Tempo Ativo (h)" dataKey="activeHoursNum" fill="#0ea5e9" radius={[4, 4, 0, 0]}>
+                          <LabelList dataKey="activeHoursNum" position="top" style={{ fill: '#a1a1aa', fontSize: 9, fontWeight: 'bold' }} />
+                        </Bar>
+                        <Bar name="Tempo Pausado (h)" dataKey="pausedHoursNum" fill="#a855f7" radius={[4, 4, 0, 0]}>
+                          <LabelList dataKey="pausedHoursNum" position="top" style={{ fill: '#a1a1aa', fontSize: 9, fontWeight: 'bold' }} />
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1372,7 +1383,9 @@ function ReportsPage() {
                         <XAxis type="number" stroke="#888" fontSize={9} />
                         <YAxis dataKey="code" type="category" stroke="#888" fontSize={10} width={60} />
                         <Tooltip formatter={(val) => [`${val} horas`, "Uso Ativo"]} contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
-                        <Bar name="Horas Trabalhadas" dataKey="activeHrsNum" fill="#0ea5e9" radius={[0, 4, 4, 0]} />
+                        <Bar name="Horas Trabalhadas" dataKey="activeHrsNum" fill="#0ea5e9" radius={[0, 4, 4, 0]}>
+                          <LabelList dataKey="activeHrsNum" position="right" style={{ fill: '#a1a1aa', fontSize: 9, fontWeight: 'bold' }} />
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1388,8 +1401,12 @@ function ReportsPage() {
                         <YAxis stroke="#888" fontSize={10} allowDecimals={false} />
                         <Tooltip contentStyle={{ backgroundColor: "#1e1e2e", borderColor: "#333", color: "#fff" }} />
                         <Legend />
-                        <Bar name="Concluídos" dataKey="completed" fill="#10b981" radius={[4, 4, 0, 0]} />
-                        <Bar name="Total" dataKey="total" fill="#4b5563" radius={[4, 4, 0, 0]} />
+                        <Bar name="Concluídos" dataKey="completed" fill="#10b981" radius={[4, 4, 0, 0]}>
+                          <LabelList dataKey="completed" position="top" style={{ fill: '#a1a1aa', fontSize: 9, fontWeight: 'bold' }} />
+                        </Bar>
+                        <Bar name="Total" dataKey="total" fill="#4b5563" radius={[4, 4, 0, 0]}>
+                          <LabelList dataKey="total" position="top" style={{ fill: '#a1a1aa', fontSize: 9, fontWeight: 'bold' }} />
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
