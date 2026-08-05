@@ -1020,7 +1020,7 @@ function ReportsPage() {
           </div>
 
           {/* 2. REPORT: TASKS DETAIL (HIGHLIGHTED) */}
-          <div className="rounded-2xl border border-border/60 bg-card/90 p-6 shadow-ember/10 shadow-lg space-y-6 relative overflow-hidden print:border print:shadow-none print:p-0">
+          <div className="rounded-2xl border border-border/60 bg-card/90 p-6 shadow-ember/10 shadow-lg space-y-6 relative overflow-hidden print:border print:shadow-none print:p-0 print:break-before-page">
             <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-bl-lg print:hidden">
               Destaque Operacional
             </div>
@@ -1187,7 +1187,7 @@ function ReportsPage() {
           </div>
 
           {/* 3. REPORT: EMPLOYEE PERFORMANCE */}
-          <div className="space-y-6">
+          <div className="space-y-6 print:break-before-page">
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
@@ -1328,7 +1328,7 @@ function ReportsPage() {
           </div>
 
           {/* 4. REPORT: MACHINE UTILIZATION */}
-          <div className="space-y-6">
+          <div className="space-y-6 print:break-before-page">
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4">
               <div className="flex items-center gap-2">
                 <Wrench className="h-5 w-5 text-primary" />
