@@ -614,7 +614,23 @@ function ReportsPage() {
           }
 
           main {
-            padding: 1cm !important;
+            padding: 0.4cm !important;
+          }
+
+          /* Compress vertical spacing of Tailwind classes */
+          .space-y-12 > :not([hidden]) ~ :not([hidden]) {
+            margin-top: 0.75rem !important;
+          }
+          .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+            margin-top: 0.4rem !important;
+          }
+          .mt-8 {
+            margin-top: 0.5rem !important;
+          }
+
+          /* Compress card paddings */
+          .p-6, .p-5, .p-4 {
+            padding: 0.4rem !important;
           }
 
           /* Force tables to extend to full screen width and disable overflow scrollbars */
@@ -636,6 +652,12 @@ function ReportsPage() {
             border-collapse: collapse !important;
           }
 
+          /* Keep task table bodies together */
+          tbody {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
           tr {
             page-break-inside: avoid !important;
             page-break-after: auto !important;
@@ -648,7 +670,7 @@ function ReportsPage() {
           /* Adjust table cell fonts to fit horizontally on A4 portrait */
           table, th, td {
             font-size: 8px !important;
-            padding: 4px 6px !important;
+            padding: 3px 4px !important;
           }
 
           /* Allow long titles to wrap instead of truncating */
@@ -661,14 +683,14 @@ function ReportsPage() {
           /* Grid structures inside report cards */
           .grid {
             display: grid !important;
-            gap: 12px !important;
+            gap: 8px !important;
           }
 
-          .grid-cols-4 {
+          .grid-cols-4, .lg\\:grid-cols-4, .lg\\:grid-cols-6 {
             grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
           }
 
-          .grid-cols-2 {
+          .grid-cols-2, .md\\:grid-cols-2 {
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
 
@@ -683,8 +705,8 @@ function ReportsPage() {
           /* Recharts SVG print dimensions */
           .recharts-responsive-container {
             width: 100% !important;
-            height: 220px !important;
-            min-height: 220px !important;
+            height: 170px !important;
+            min-height: 170px !important;
             display: block !important;
           }
 
@@ -699,9 +721,15 @@ function ReportsPage() {
             color: #0f172a !important;
           }
 
+          /* Prevent headers from staying alone at the bottom of pages */
+          h1, h2, h3, h4, .border-b {
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+          }
+
           @page {
             size: A4 portrait;
-            margin: 1cm;
+            margin: 0.8cm;
           }
         }
       `}} />
@@ -867,7 +895,7 @@ function ReportsPage() {
           </div>
 
           {/* 1. REPORT: WORKSHOP GENERAL SUMMARY */}
-          <div className="space-y-6 print:break-after-page">
+          <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-primary" />
@@ -985,7 +1013,7 @@ function ReportsPage() {
           </div>
 
           {/* 2. REPORT: TASKS DETAIL (HIGHLIGHTED) */}
-          <div className="rounded-2xl border-2 border-primary/60 bg-card/90 p-6 shadow-ember/10 shadow-lg space-y-6 relative overflow-hidden print:border print:shadow-none print:p-0 print:break-after-page">
+          <div className="rounded-2xl border border-border/60 bg-card/90 p-6 shadow-ember/10 shadow-lg space-y-6 relative overflow-hidden print:border print:shadow-none print:p-0">
             <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-bl-lg print:hidden">
               Destaque Operacional
             </div>
@@ -1070,8 +1098,8 @@ function ReportsPage() {
                       };
 
                       return (
-                        <>
-                          <tr key={d.id} className="hover:bg-accent/20">
+                        <tbody key={d.id} className="divide-y divide-border/40 text-xs print:break-inside-avoid border-b border-border/40">
+                          <tr className="hover:bg-accent/20">
                             <td className="p-3 font-semibold text-foreground max-w-xs truncate">{d.title}</td>
                             <td className="p-3 text-muted-foreground">{d.type}</td>
                             <td className="p-3">
@@ -1137,7 +1165,7 @@ function ReportsPage() {
                               </td>
                             </tr>
                           )}
-                        </>
+                        </tbody>
                       );
                     })}
                   </tbody>
@@ -1149,7 +1177,7 @@ function ReportsPage() {
           </div>
 
           {/* 3. REPORT: EMPLOYEE PERFORMANCE */}
-          <div className="space-y-6 print:break-after-page">
+          <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
