@@ -1091,20 +1091,24 @@ function ReportsPage() {
                       <th className="p-3 text-center">Pausas</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border/40 text-xs">
                     {generatedReport.tarefas.data.map((d: any) => {
                       const st = STATUS.find((s) => s.id === d.status);
                       
                       const formatTaskDate = (isoStr: string | null | undefined) => {
                         if (!isoStr) return "-";
                         const date = new Date(isoStr);
-                        return date.toLocaleDateString("pt-BR") + " " + date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+                        return (
+                          <div className="flex flex-col text-[10px] leading-tight font-medium print:text-[8px]">
+                            <span className="text-foreground">{date.toLocaleDateString("pt-BR")}</span>
+                            <span className="text-muted-foreground">{date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                          </div>
+                        );
                       };
 
                       return (
                         <tbody key={d.id} className="divide-y divide-border/40 text-xs print:break-inside-avoid border-b border-border/40">
                           <tr className="hover:bg-accent/20">
-                            <td className="p-3 font-semibold text-foreground max-w-xs truncate">{d.title}</td>
+                            <td className="p-3 font-semibold text-foreground max-w-xs truncate print:max-w-none print:whitespace-normal print:overflow-visible">{d.title}</td>
                             <td className="p-3 text-muted-foreground">{d.type}</td>
                             <td className="p-3">
                               <span className={cn("inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border", st?.tone)}>
@@ -1118,8 +1122,8 @@ function ReportsPage() {
                             </td>
                             <td className="p-3 text-foreground font-medium">{d.assignee}</td>
                             <td className="p-3 text-muted-foreground">{d.machine}</td>
-                            <td className="p-3 text-muted-foreground whitespace-nowrap">{formatTaskDate(d.started_at)}</td>
-                            <td className="p-3 text-muted-foreground whitespace-nowrap">{formatTaskDate(d.completed_at)}</td>
+                            <td className="p-3 text-muted-foreground">{formatTaskDate(d.started_at)}</td>
+                            <td className="p-3 text-muted-foreground">{formatTaskDate(d.completed_at)}</td>
                             <td className="p-3 text-right tabular-nums text-foreground">{d.activeHrsText}</td>
                             <td className="p-3 text-right tabular-nums text-muted-foreground">{d.pausedHrsText}</td>
                             <td className="p-3 text-center tabular-nums font-semibold">
@@ -1172,7 +1176,6 @@ function ReportsPage() {
                         </tbody>
                       );
                     })}
-                  </tbody>
                 </table>
               </div>
             </div>
