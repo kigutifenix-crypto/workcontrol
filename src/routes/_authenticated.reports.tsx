@@ -616,23 +616,23 @@ function ReportsPage() {
           }
 
           main {
-            padding: 0.4cm !important;
+            padding: 0.3cm !important;
           }
 
           /* Compress vertical spacing of Tailwind classes */
           .space-y-12 > :not([hidden]) ~ :not([hidden]) {
-            margin-top: 0.75rem !important;
+            margin-top: 0.6rem !important;
           }
           .space-y-6 > :not([hidden]) ~ :not([hidden]) {
-            margin-top: 0.4rem !important;
+            margin-top: 0.35rem !important;
           }
           .mt-8 {
-            margin-top: 0.5rem !important;
+            margin-top: 0.4rem !important;
           }
 
           /* Compress card paddings */
           .p-6, .p-5, .p-4 {
-            padding: 0.4rem !important;
+            padding: 0.35rem !important;
           }
 
           /* Force tables to extend to full screen width and disable overflow scrollbars */
@@ -671,8 +671,8 @@ function ReportsPage() {
 
           /* Adjust table cell fonts to fit horizontally on A4 portrait */
           table, th, td {
-            font-size: 8px !important;
-            padding: 3px 4px !important;
+            font-size: 7.5px !important;
+            padding: 2px 3px !important;
           }
 
           /* Allow long titles to wrap instead of truncating */
@@ -685,11 +685,19 @@ function ReportsPage() {
           /* Grid structures inside report cards */
           .grid {
             display: grid !important;
-            gap: 8px !important;
+            gap: 6px !important;
           }
 
-          .grid-cols-4, .lg\\:grid-cols-4, .lg\\:grid-cols-6 {
+          .grid-cols-4, .lg\\:grid-cols-4 {
             grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+          }
+          
+          .lg\\:grid-cols-6 {
+            grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+          }
+
+          .lg\\:grid-cols-5 {
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
           }
 
           .grid-cols-2, .md\\:grid-cols-2 {
@@ -707,12 +715,12 @@ function ReportsPage() {
           /* Recharts SVG print dimensions and container heights */
           .recharts-responsive-container {
             width: 100% !important;
-            height: 170px !important;
-            min-height: 170px !important;
+            height: 125px !important;
+            min-height: 125px !important;
             display: block !important;
           }
           .h-64, .h-60 {
-            height: 170px !important;
+            height: 125px !important;
           }
 
           /* Lighten card styles */
@@ -734,7 +742,7 @@ function ReportsPage() {
 
           @page {
             size: A4 portrait;
-            margin: 0.8cm;
+            margin: 0.5cm;
           }
         }
       `}} />
@@ -1020,7 +1028,7 @@ function ReportsPage() {
           </div>
 
           {/* 2. REPORT: TASKS DETAIL (HIGHLIGHTED) */}
-          <div className="rounded-2xl border border-border/60 bg-card/90 p-6 shadow-ember/10 shadow-lg space-y-6 relative overflow-hidden print:border print:shadow-none print:p-0 print:break-before-page">
+          <div className="rounded-2xl border border-border/60 bg-card/90 p-6 shadow-ember/10 shadow-lg space-y-6 relative overflow-hidden print:border print:shadow-none print:p-0">
             <div className="absolute top-0 right-0 bg-primary text-primary-foreground px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-bl-lg print:hidden">
               Destaque Operacional
             </div>
@@ -1328,7 +1336,7 @@ function ReportsPage() {
           </div>
 
           {/* 4. REPORT: MACHINE UTILIZATION */}
-          <div className="space-y-6 print:break-before-page">
+          <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4">
               <div className="flex items-center gap-2">
                 <Wrench className="h-5 w-5 text-primary" />
